@@ -26,7 +26,7 @@ hex(N) when N >= 10, N < 16 ->
 
 
 md5_to_str(Str) ->
-    <<M:128/integer>> = crypto:hash(md5, Str),
+    <<M:128/integer>> = erlang:md5(Str),
     int_to_hex(M, 32).
 
 int_to_hex(I, Len) ->
