@@ -5,10 +5,15 @@
 %%%-------------------------------------------------------------------
 -module(erl_time).
 
--export([now/0, sec_to_localtime/1, today/0]).
+-export([now/0, times/0, sec_to_localtime/1, zero_times/0]).
 
 now() ->
-    os:system_time(seconds).
+%%    os:system_time(seconds).
+    times().
+
+times() ->
+    {MegaSec, Sec, _MilliSec} = os:timestamp(),
+    MegaSec * 1000000 + Sec.
 
 sec_to_localtime(Times) ->
     MSec = Times div 1000000,
@@ -16,8 +21,8 @@ sec_to_localtime(Times) ->
     calendar:now_to_local_time({MSec, Sec, 0}).
 
 
-today() ->
-    Times = os:system_time(seconds),
+zero_times() ->
+    Times = times(),
     case erlang:time() of
         {0, 0, 0} ->
             Times;

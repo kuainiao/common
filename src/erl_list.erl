@@ -6,7 +6,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_list).
 
--export([move/4]).
+-export([move/4, lists_spawn/2]).
 
 %%  @doc 调换顺序
 move(0, FromItem, ToItem, List) ->
@@ -47,4 +47,17 @@ index(_Item, [], _Num) -> 0;
 index(Item, [Item | _List], Num) -> Num;
 index(Item, [_I | List], Num) -> index(Item, List, Num + 1).
 
-
+lists_spawn(Fun, Lists) ->
+    Ref = erlang:make_ref(),
+    Pid = self(),
+    [
+        receive
+            {Ref, Res} -> Res;
+            _ -> ok
+        end || _ <-
+        [spawn(
+            fun() ->
+                Res = Fun(I),
+                Pid ! {Ref, Res}
+            end) || I <- Lists]
+    ].
