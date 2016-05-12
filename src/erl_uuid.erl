@@ -10,6 +10,6 @@
 uuid() ->
     Pid = self(),
     Ref = erlang:make_ref(),
-    {MegaSecs, Secs, MicroSecs} = erlang:timestamp(),
+    {MegaSecs, Secs, MicroSecs} = os:timestamp(),
     Timers = MegaSecs * 1000000000000 + Secs * 1000000 + MicroSecs,
     erl_md5:md5_to_str(term_to_binary({Pid, Ref, Timers})).
