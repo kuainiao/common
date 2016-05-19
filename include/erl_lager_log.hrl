@@ -30,12 +30,12 @@
 
 -ifdef(env_product).
 
--define(WARN(D),        lager:warning(D)).
--define(WARN(F, D),     lager:warning(F, D)).
--define(INFO(D),        lager:info(D)).
--define(INFO(F, D),     lager:info(F, D)).
--define(ERROR(D),       lager:error(D)).
--define(ERROR(F, D),    lager:error(F, D)).
+-define(WARN(MSG),          lager:warning("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+-define(WARN(MSG, ARGS),    lager:warning("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+-define(INFO(MSG),          lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+-define(INFO(MSG, ARGS),    lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+-define(ERROR(MSG),         lager:error("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+-define(ERROR(MSG, ARGS),   lager:error("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
 
 
 -else.
