@@ -7,3 +7,4 @@
 
 -include("erl_lager_log.hrl").
 -include("erl_common.hrl").
+-include("erl_err_code.hrl").
