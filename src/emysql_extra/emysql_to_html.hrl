@@ -248,6 +248,56 @@ lookup(Record, sql) ->
 ">>.
 
 
+
+
+to_select(Tab, KvList) ->
+    Fields = fun_arg(KvList),
+    Foldl =
+        fun({Field, _Default, _Comment}, {AccFun, AccSelectArg}) ->
+            Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
+
+            NewAccSelectArg = if
+                                  AccSelectArg =:= <<>> -> Variate;
+                                  true -> <<AccSelectArg/binary, "/binary,\",\",", Variate/binary>>
+                              end,
+
+            {
+                <<AccFun/binary, "    ", Variate/binary, " = Fun(<<\"", Field/binary, "\">>, Record#", Tab/binary, ".", Field/binary, "),\n">>,
+                NewAccSelectArg
+            }
+        end,
+    {NewFun, NewArg} = lists:foldl(Foldl, {<<>>, <<>>}, KvList),
+    <<"select(Record, StartIndex, Len) ->
+    SIndex = list_to_binary(StartIndex),
+    LenBin = list_to_binary(Len),
+    case select(Record, SIndex, LenBin, sql) of
+        {error, Err} -> {error, Err};
+        Sql -> erl_mysql:execute(Sql)
+    end.
+
+select(Record, StartIndex, Len, sql) ->
+    Fun =
+        fun(Field, Item) ->
+            if
+                Item =:= <<"">> -> <<"">>;
+                true ->
+                    case erl_mysql:illegal_character(Item) of
+                        false -> <<"">>;
+                        true -> <<Field/binary, \"=\", Item/binary>>
+                    end
+            end
+        end,
+", NewFun/binary, "
+    SelectArg = <<", NewArg/binary, ">>,
+
+    <<\"select ", Fields/binary, " from account_cdk where \", SelectArg/binary, \" limit \", StartIndex/binary, \", \",Len/binary,\";\">>.
+
+">>.
+
+
+
+
+
 to_check_fields(Tab, KvList) ->
     Can = lists:foldl(
         fun({K, _V, _Comment}, Fields) ->
@@ -260,7 +310,7 @@ to_check_fields(Tab, KvList) ->
         end, <<>>, KvList),
 
     <<"check_fields(Record) ->
-case erl_can:can([
+    case erl_can:can([
 ", Can/binary, "
     ]) of
         {ok, FieldData} ->

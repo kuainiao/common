@@ -27,13 +27,13 @@ illegal_character(K, [Char | Chars]) ->
 
 execute(SQL) ->
     Sql = iolist_to_binary(SQL),
-    io:format("SQL:~ts~n", [Sql]),
+%%    io:format("SQL:~ts~n", [Sql]),
     try emysql:execute(platform_pool, Sql, 10000) of
         {result_packet, _, _, Data, _} ->
             Data;
+        [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R] ->
+            [Rows1 || {result_packet, _, _, Rows1, _} <- [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R]];
         {ok_packet, _, _, Data, _, _, _} ->
-            Data;
-        [{result_packet, _, _, Data, _}, _] ->
             Data;
         [{ok_packet, _, _, _, __, _, _} | _] ->
             ok;

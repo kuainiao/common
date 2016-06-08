@@ -85,6 +85,7 @@ to_erl(TableName, OldFields, Fields) ->
             to_delete(TableName, PRIList),
             to_update(TableName, PRIList, OtherList),
             to_lookup(TableName, ToRecord, PRIList, OtherList),
+            to_select(TableName, ToRecord),
             to_check_fields(TableName, ToRecord),
             to_validate(),
             to_validate(FieldsRecord)
