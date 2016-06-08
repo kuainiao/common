@@ -28,11 +28,11 @@ can([Fun | FunList], Arg) ->
 
 is_t2t(Data, TypeFrom, TypeTo) ->
     try t2t(Data, TypeFrom, TypeTo) of
-        error -> {error, ?ERR_CONVERT_TYPE_FAIL};
+        error -> ?return_error(?ERR_CONVERT_TYPE_FAIL);
         NewData -> {ok, NewData}
     catch
         _C:_W ->
-            {error, ?ERR_CONVERT_TYPE_FAIL}
+            ?return_error(?ERR_CONVERT_TYPE_FAIL)
     end.
 
 t2t(Data, list, integer) ->
@@ -44,7 +44,7 @@ t2t(Data, list, integer) ->
 
 is_type(Type, Data) ->
     case check_type(Type, Data) of
-        false -> {error, ?ERR_TYPE_ERROR};
+        false -> ?return_error(?ERR_TYPE_ERROR);
         true -> ok
     end.
 
@@ -63,5 +63,5 @@ check_illegal_chars(Binary) ->
              end,
     case lists:all(FunAll, ?ILLEGAL_CHARACTER) of
         true -> {ok, Binary};
-        false -> {error, ?ERR_CHARS_VERIFY_FAIL}
+        false -> ?return_error(?ERR_CHARS_VERIFY_FAIL)
     end.
