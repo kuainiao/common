@@ -35,7 +35,7 @@ is_t2t(Data, TypeFrom, TypeTo) ->
             ?return_error(?ERR_CONVERT_TYPE_FAIL)
     end.
 
-t2t(Data, list, integer) ->
+t2t(Data, ?list, ?integer) ->
     case string:to_integer(Data) of
         {Int, []} -> Int;
         _ -> error
@@ -48,9 +48,9 @@ is_type(Type, Data) ->
         true -> ok
     end.
 
-check_type(list, L) -> erlang:is_list(L);
-check_type(binary, Bin) -> erlang:is_binary(Bin);
-check_type(integer, Int) -> erlang:is_integer(Int).
+check_type(?list, L) -> erlang:is_list(L);
+check_type(?binary, Bin) -> erlang:is_binary(Bin);
+check_type(?integer, Int) -> erlang:is_integer(Int).
 
 
 -define(ILLEGAL_CHARACTER, [<<"\'">>, <<"`">>, <<"\\">>]).

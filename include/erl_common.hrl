@@ -10,3 +10,7 @@
 
 -define(FALSE, 0).
 -define(TRUE, 1).
+
+-define(integer, integer).
+-define(list, list).
+-define(binary, binary).

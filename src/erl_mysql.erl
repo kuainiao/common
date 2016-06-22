@@ -6,6 +6,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_mysql).
 
+-include("erl_pub.hrl").
 
 -export([start/0, illegal_character/1, execute/1]).
 
@@ -39,10 +40,10 @@ execute(SQL) ->
             ok;
         _Error ->
             io:format("emysql:execute error:~p~n SQL:~ts~n", [_Error, Sql]),
-            {error, 'ERR_EXEC_SQL_ERR'}
+            ?return_error('ERR_EXEC_SQL_ERR')
     catch
         _E1:_E2 ->
             io:format("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
-            {error, 'ERR_EXEC_SQL_ERR'}
+            ?return_error('ERR_EXEC_SQL_ERR')
     end.
 

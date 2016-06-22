@@ -74,21 +74,23 @@ table(TableName) ->
 
 to_erl(TableName, OldFields, Fields) ->
     ToRecord = [{Field#field.field, Field#field.default, Field#field.comment} || Field <- Fields],
-    PRIList = [{Field, Default} || #field{field = Field, key = Key, default = Default} <- Fields, Key =:= <<"PRI">> orelse Key =:= <<"MUL">> orelse Key =:= <<"UNI">>],
+    ToInsert = [{Field#field.field, Field#field.default, Field#field.comment} || Field <- Fields, Field#field.extra =/= <<"auto_increment">>],
+    PRIList = [{Field, Default} || #field{field = Field, key = Key, default = Default} <- Fields, Key =:= <<"PRI">>],
     OtherList = [{Field, Default} || #field{field = Field, key = Key, default = Default} <- Fields, Key =/= <<"PRI">> andalso Key =/= <<"MUL">> andalso Key =/= <<"UNI">>],
     FieldsRecord = [{K, DataType, TypeSize, IsNull, Default} || #field{field = K, erl_type = DataType, type_size = TypeSize, is_null = IsNull, default = Default} <- Fields],
     {
         [
             to_module(TableName),
             to_field(OldFields),
-            to_insert(TableName, ToRecord),
+            to_insert(TableName, ToInsert),
             to_delete(TableName, PRIList),
             to_update(TableName, PRIList, OtherList),
             to_lookup(TableName, ToRecord, PRIList, OtherList),
             to_select(TableName, ToRecord),
             to_check_fields(TableName, ToRecord),
             to_validate(),
-            to_validate(FieldsRecord)
+            to_validate(FieldsRecord),
+            to_default(ToRecord)
         ],
         to_record(TableName, ToRecord)
     }.
