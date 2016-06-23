@@ -59,18 +59,26 @@ to_insert(Tab, KvList) ->
     Fields = fun_arg(KvList),
 
     Foldl =
-        fun({K, _Default, _Comment}, {FunAcc, Values}) ->
+        fun({K, _Default, _Comment}, {FunAcc, Values, Can}) ->
 
             Variate = list_to_binary(string:to_upper(binary_to_list(K))),
             Fun = <<"            ", Variate/binary, " = Fun(Record#", Tab/binary, ".", K/binary, "),\n">>,
             NewV = <<"                \",", Variate/binary, "/binary, \"">>,
-            Values1 = if
-                          Values == <<>> -> NewV;
-                          true -> <<Values/binary, ",\n", NewV/binary>>
-                      end,
-            {<<FunAcc/binary, Fun/binary>>, Values1}
+            Values1 =
+                if
+                    Values == <<>> -> NewV;
+                    true -> <<Values/binary, ",\n", NewV/binary>>
+                end,
+            Can1 =
+                if
+                    Can =:= <<>> ->
+                        <<"        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>;
+                    true ->
+                        <<Can/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
+                end,
+            {<<FunAcc/binary, Fun/binary>>, Values1, Can1}
         end,
-    {FunArg, NewValues} = lists:foldl(Foldl, {<<>>, <<>>}, KvList),
+    {FunArg, NewValues, NewCan} = lists:foldl(Foldl, {<<>>, <<>>, <<>>}, KvList),
 
     <<"
 
@@ -82,7 +90,9 @@ insert(Record) ->
     end.
 
 insert(Record, sql) ->
-    case check_fields(Record) of
+     case erl_can:can([
+", NewCan/binary, "
+    ]) of
         {ok, _FieldData} ->
             Fun =
                 fun(Key) ->
@@ -111,7 +121,7 @@ to_delete(Tab, []) ->
 to_delete(Tab, PRIList) ->
     Foldl = fun({Field, Default}, {Arg, Fun, Where}) ->
         Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
-        Can = fun_can(Tab, Variate),
+        Can = fun_can(Tab, Field),
         SqlWhere = fun_where(Field, Variate, Default),
 
         Arg2 = if
@@ -148,17 +158,17 @@ delete(", NewArg/binary, ", sql) ->
 
 ">>.
 
-to_update(Tab, [], _) ->
+to_update(Tab, [], _, _) ->
     <<"update(_Record) -> io:format(\"table:", Tab/binary, "...no pri_key~n\"), {error, <<\"no_pri_key\">>}.
 
 ">>;
 
-to_update(Tab, _, []) ->
+to_update(Tab, _, [], _) ->
     <<"update(_Record) -> io:format(\"table:", Tab/binary, "...all pri_key~n\"), {error, <<\"all_pri_key\">>}.
 
 ">>;
 
-to_update(Tab, PRIList, _OtherList) ->
+to_update(Tab, PRIList, _OtherList, CanKvList) ->
     Foldl =
         fun({Field, Default}, {Pri, Where, Num}) ->
             Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
@@ -178,6 +188,16 @@ to_update(Tab, PRIList, _OtherList) ->
     {NewPri, NewWhere, _} = lists:foldl(Foldl, {<<>>, <<>>, 0}, PRIList),
     Len = length(PRIList),
 
+    NewCan = lists:foldl(
+        fun({K, _V, _Comment}, Fields) ->
+            if
+                Fields =:= <<>> ->
+                    <<"        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>;
+                true ->
+                    <<Fields/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
+            end
+        end, <<>>, CanKvList),
+
     <<"update(Record) ->
     case update(Record, sql) of
         {error, Err} -> {error, Err};
@@ -185,7 +205,9 @@ to_update(Tab, PRIList, _OtherList) ->
     end.
 
 update(Record, sql) ->
-    case check_fields(Record) of
+     case erl_can:can([
+", NewCan/binary, "
+    ]) of
         {ok, FieldData} ->
             ", NewPri/binary, "
             {SetAcc, _} = lists:foldl(
@@ -221,7 +243,7 @@ to_lookup(Tab, KvList, PRIList, _OtherList) ->
     Foldl =
         fun({Field, Default}, {Arg, Fun, Where}) ->
             Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
-            Can = fun_can(Tab, Variate),
+            Can = fun_can(Tab, Field),
             SqlWhere = fun_where(Field, Variate, Default),
 
             Arg2 = if
@@ -272,14 +294,8 @@ lookup(", NewArg/binary, ", sql) ->
 to_select(Tab, KvList) ->
     Fields = fun_arg(KvList),
     Foldl =
-        fun({Field, _Default, _Comment}, {AccFun, AccField, RFCEncode}) ->
-            NewAccFun =
-                if
-                    AccFun =:= <<>> ->
-                        <<"            {<<\"", Field/binary, "\">>, Record#", Tab/binary, ".", Field/binary, "}">>;
-                    true ->
-                        <<AccFun/binary, ",\n            {<<\"", Field/binary, "\">>, Record#", Tab/binary, ".", Field/binary, "}">>
-                end,
+        fun({Field, _Default, _Comment}, {AccField, RFCEncode}) ->
+
             NewAccField =
                 if
                     AccField =:= <<>> -> list_to_binary(string:to_upper(binary_to_list(Field)));
@@ -292,78 +308,57 @@ to_select(Tab, KvList) ->
                     true ->
                         <<RFCEncode/binary, ", ", "{<<\"", Field/binary, "\">>, ", (list_to_binary(string:to_upper(binary_to_list(Field))))/binary, "}">>
                 end,
-            {NewAccFun, NewAccField, NewRFCEncode}
+            {NewAccField, NewRFCEncode}
         end,
-    {NewFun, NewField, NewEncode} = lists:foldl(Foldl, {<<>>, <<>>, <<>>}, KvList),
-    <<"select(Record, StartIndex) ->
+    {NewField, NewEncode} = lists:foldl(Foldl, {<<>>, <<>>}, KvList),
+    <<"select(SelectKvList, StartIndex, SortKey, SortType ) ->
     SIndex = integer_to_binary(StartIndex),
-    case select(Record, SIndex, <<\"30\">>, sql) of
+    case select(SelectKvList, SIndex, <<\"30\">>, SortKey, SortType, sql) of
         {error, Err} -> {error, Err};
         Sql ->
-            Ret = erl_mysql:execute(Sql),
+            [[[Count]], Ret] = erl_mysql:execute(Sql),
             Fun =
                 fun([", NewField/binary, "]) ->
                     {obj, [", NewEncode/binary, "]}
                 end,
-            lists:map(Fun, Ret)
+            {Count, lists:map(Fun, Ret)}
     end.
 
-select(Record, StartIndex, Len, sql) ->
+select(SelectKvList, StartIndex, Len, SortKey, SortType, sql) ->
     SelectArg = lists:foldl(
         fun({Field, Item}, Acc) ->
-            if
-                Item =:= <<>> -> Acc;
+            case erl_mysql:illegal_character(Item) of
+                false -> Acc;
                 true ->
-                    case erl_mysql:illegal_character(Item) of
-                        false -> Acc;
-                        true ->
-                            if
-                                Acc =:= <<>> -> <<Field/binary, \"=\", Item/binary>>;
-                                true -> <<Acc/binary, \",\", Field/binary, \"=\", Item/binary>>
-                            end
-
+                    if
+                        Acc =:= <<>> -> <<Field/binary, \"=\", Item/binary>>;
+                        true -> <<Acc/binary, \",\", Field/binary, \"=\", Item/binary>>
                     end
+
             end
         end,
         <<>>,
-        [
-", NewFun/binary, "
-        ]),
+        SelectKvList),
+    OrderBy =
+        if
+            SortKey == <<\"\">> -> <<>>;
+            true ->
+                case SortType of
+                \"0\" ->
+                    <<\" order by \", SortKey/binary, \" \">>;
+                \"1\" ->
+                    <<\" order by \", SortKey/binary, \" DESC \">>
+            end
+        end,
     case SelectArg of
         <<>> ->
-            <<\"select ", Fields/binary, " from ", Tab/binary, " limit \", StartIndex/binary, \", \", Len/binary, \";\">>;
+            <<\"select count(*) from ", Tab/binary, "; select ", Fields/binary, " from ", Tab/binary, " \", OrderBy/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>;
         _ ->
-            <<\"select ", Fields/binary, " from ", Tab/binary, " where \", SelectArg/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>
+            <<\"select count(*) from ", Tab/binary, "; select ", Fields/binary, " from ", Tab/binary, " where \", SelectArg/binary, \", " ", \", OrderBy/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>
     end.
 
 ">>.
 
-
-
-
-
-to_check_fields(Tab, KvList) ->
-    Can = lists:foldl(
-        fun({K, _V, _Comment}, Fields) ->
-            if
-                Fields =:= <<>> ->
-                    <<"        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>;
-                true ->
-                    <<Fields/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
-            end
-        end, <<>>, KvList),
-
-    <<"check_fields(Record) ->
-    case erl_can:can([
-", Can/binary, "
-    ]) of
-        {ok, FieldData} ->
-            {ok, FieldData};
-        ErrCode -> ErrCode
-    end.
-
-
-">>.
 
 to_validate() ->
     <<"validate(Table, Field, Value) ->
@@ -386,19 +381,23 @@ to_validate(FieldsRecord) ->
                             IsNull =:= <<"NO">> -> <<"(", KArg/binary, "=/= <<\"", Default/binary, "\">>)">>;
                             true -> <<"">>
                         end,
-            CheckType = if
-                            DataType =:= int ->
-                                <<"( is_integer(", KArg/binary, ") andalso ", KArg/binary, " >= -2147483648 andalso ", KArg/binary, " =< 2147483648 ) ">>;
-                            TypeSize =:= null ->
-                                <<"( is_binary(", KArg/binary, ") )">>;
-                            DataType =:= binary ->
-                                <<"( is_binary(", KArg/binary, ") andalso byte_size(", KArg/binary, ") =< ", TypeSize/binary, ")">>
-                        end,
+            {CheckType, Illegal} =
+                if
+                    DataType =:= int ->
+                        {<<"( is_integer(", KArg/binary, ") andalso ", KArg/binary, " >= -2147483648 andalso ", KArg/binary, " =< 2147483648 ) ">>,
+                            <<>>};
+                    TypeSize =:= null ->
+                        {<<"( is_binary(", KArg/binary, ") )">>,
+                            <<" andalso erl_mysql:illegal_character(", KArg/binary, ")">>};
+                    DataType =:= binary ->
+                        {<<"( is_binary(", KArg/binary, ") andalso byte_size(", KArg/binary, ") =< ", TypeSize/binary, ")">>,
+                            <<" andalso erl_mysql:illegal_character(", KArg/binary, ")">>}
+                end,
             if
                 CheckNull =:= <<"">> ->
-                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckType/binary, " andalso erl_mysql:illegal_character(", KArg/binary, ");\n">>;
+                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckType/binary, Illegal/binary, ";\n">>;
                 true ->
-                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckNull/binary, " orelse ", CheckType/binary, " andalso erl_mysql:illegal_character(", KArg/binary, ");\n">>
+                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckNull/binary, " orelse ", CheckType/binary, Illegal/binary, ";\n">>
             end
         end,
     <<(iolist_to_binary(lists:map(Fun, FieldsRecord)))/binary,
@@ -406,17 +405,29 @@ to_validate(FieldsRecord) ->
     io:format(\"error no field:~p~n\", [[_K, _V]]),
     false.">>.
 
-to_default(ToRecord) ->
-    Acc = lists:foldl(
-        fun({K, Default, _Comment}, ToDefault) ->
+to_default(Tab, ToRecord) ->
+    {ToDefaultAcc, ToIndexAcc} = lists:foldl(
+        fun({K, Default, _Comment}, {ToDefault, ToIndex}) ->
             if
-                ToDefault =:= <<>> -> <<"to_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>;
-                true -> <<ToDefault/binary, ";\nto_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>
+                ToDefault =:= <<>> ->
+                    {
+                        <<"to_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>,
+                        <<"to_index(", K/binary, ") -> #", Tab/binary, ".", K/binary>>
+                    };
+                true ->
+                    {
+                        <<ToDefault/binary, ";\nto_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>,
+                        <<ToIndex/binary, ";\nto_index(", K/binary, ") -> #", Tab/binary, ".", K/binary>>
+                    }
             end
-        end, <<>>, ToRecord),
+        end, {<<>>, <<>>}, ToRecord),
+    
     <<"
 
-", Acc/binary, ".">>.
+", ToDefaultAcc/binary, ".
+
+
+", ToIndexAcc/binary, ".">>.
 
 
 

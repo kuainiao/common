@@ -84,13 +84,12 @@ to_erl(TableName, OldFields, Fields) ->
             to_field(OldFields),
             to_insert(TableName, ToInsert),
             to_delete(TableName, PRIList),
-            to_update(TableName, PRIList, OtherList),
+            to_update(TableName, PRIList, OtherList, ToRecord),
             to_lookup(TableName, ToRecord, PRIList, OtherList),
             to_select(TableName, ToRecord),
-            to_check_fields(TableName, ToRecord),
             to_validate(),
             to_validate(FieldsRecord),
-            to_default(ToRecord)
+            to_default(TableName, ToRecord)
         ],
         to_record(TableName, ToRecord)
     }.
