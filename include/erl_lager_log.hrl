@@ -30,12 +30,12 @@
 
 %%-ifdef(env_product).
 
--define(WARN(MSG),          lager:warning("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
--define(WARN(MSG, ARGS),    lager:warning("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+-define(WARN(MSG),          lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+-define(WARN(MSG, ARGS),    lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
 -define(INFO(MSG),          lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
 -define(INFO(MSG, ARGS),    lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
--define(ERROR(MSG),         lager:error("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
--define(ERROR(MSG, ARGS),   lager:error("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+-define(ERROR(MSG),         lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+-define(ERROR(MSG, ARGS),   lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
 
 
 %%-else.
