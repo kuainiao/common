@@ -121,7 +121,7 @@ to_delete(Tab, []) ->
 to_delete(Tab, PRIList) ->
     Foldl = fun({Field, Default}, {Arg, Fun, Where}) ->
         Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
-        Can = fun_can(Tab, Field),
+        Can = fun_can(Tab, Field, Variate),
         SqlWhere = fun_where(Field, Variate, Default),
 
         Arg2 = if
@@ -243,7 +243,7 @@ to_lookup(Tab, KvList, PRIList, _OtherList) ->
     Foldl =
         fun({Field, Default}, {Arg, Fun, Where}) ->
             Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
-            Can = fun_can(Tab, Field),
+            Can = fun_can(Tab, Field, Variate),
             SqlWhere = fun_where(Field, Variate, Default),
 
             Arg2 = if
@@ -421,7 +421,7 @@ to_default(Tab, ToRecord) ->
                     }
             end
         end, {<<>>, <<>>}, ToRecord),
-    
+
     <<"
 
 ", ToDefaultAcc/binary, ".
@@ -440,8 +440,8 @@ fun_arg(AccRecord) ->
             end
         end, <<>>, AccRecord).
 
-fun_can(Tab, Field) ->
-    <<"\n        fun() -> validate(", Tab/binary, ", '", Field/binary, "', ", Field/binary, ") end">>.
+fun_can(Tab, Field, Variate) ->
+    <<"\n        fun() -> validate(", Tab/binary, ", '", Field/binary, "', ", Variate/binary, ") end">>.
 
 fun_where(Field, FieldArg, V) ->
     if
