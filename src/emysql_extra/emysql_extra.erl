@@ -37,17 +37,25 @@
     comment
 }).
 
-main(_Arg) ->
+main([]) ->
+    {ok, Pools} = application:get_env(emysql, pools),
+    lists:map(
+        fun({_, Config}) ->
+            {_, Database} = lists:keyfind(database, 1, Config),
+            Database
+        end,
+        Pools);
+
+
+main(Databases) ->
     crypto:start(),
     emysql:start(),
-    {ok, Pools} = application:get_env(emysql, pools),
-    Fun = fun({_, Config}) ->
-        {_, Database} = lists:keyfind(database, 1, Config),
-        AllTable = erl_mysql:execute(<<"select TABLE_NAME from information_schema.`TABLES` where TABLE_SCHEMA = '", (list_to_binary(Database))/binary, "'">>),
+    Fun = fun(Database) ->
+        AllTable = erl_mysql:execute(<<"select TABLE_NAME from information_schema.`TABLES` where TABLE_SCHEMA = '", (list_to_binary(Database))/binary, "';">>),
         AllRecord = lists:map(fun([TableName]) -> table(TableName) end, AllTable),
         file:write_file(<<"./src/auto/mysql/mysql_tab_record.hrl">>, AllRecord)
           end,
-    lists:map(Fun, Pools).
+    lists:map(Fun, Databases).
 
 
 table(TableName) ->
