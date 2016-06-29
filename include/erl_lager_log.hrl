@@ -30,21 +30,21 @@
 
 %%-ifdef(env_product).
 
--define(WARN(MSG),          lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
--define(WARN(MSG, ARGS),    lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
--define(INFO(MSG),          lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
--define(INFO(MSG, ARGS),    lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
--define(ERROR(MSG),         lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
--define(ERROR(MSG, ARGS),   lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+%%-define(WARN(MSG),          lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+%%-define(WARN(MSG, ARGS),    lager:warning("~p [WARN] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+%%-define(INFO(MSG),          lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+%%-define(INFO(MSG, ARGS),    lager:info("~p [INFO] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
+%%-define(ERROR(MSG),         lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE])).
+%%-define(ERROR(MSG, ARGS),   lager:error("~p [ERROR] [~s:~b] " MSG, [calendar:local_time(), ?FILE, ?LINE|ARGS])).
 
 
 %%-else.
-%%
-%%-define(INFO(MSG),          io:format(?color_green"~p [INFO] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
-%%-define(INFO(FMT, ARGS),    io:format(?color_green"~p [INFO] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
-%%-define(WARN(MSG),          io:format(?color_yellow"~p [WARN] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
-%%-define(WARN(FMT, ARGS),    io:format(?color_yellow"~p [WARN] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
-%%-define(ERROR(MSG),         io:format(?color_red"~p [ERROR] [~s:~B] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
-%%-define(ERROR(FMT, ARGS),   io:format(lists:append([?color_red, "~p [ERROR] [~s:~B] ", FMT, "~n", ?color_none]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
-%%
+
+-define(INFO(MSG),          io:format(?color_green"~p [INFO] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(INFO(FMT, ARGS),    io:format(?color_green"~p [INFO] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(WARN(MSG),          io:format(?color_yellow"~p [WARN] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(WARN(FMT, ARGS),    io:format(?color_yellow"~p [WARN] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(ERROR(MSG),         io:format(?color_red"~p [ERROR] [~s:~B] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(ERROR(FMT, ARGS),   io:format(lists:append([?color_red, "~p [ERROR] [~s:~B] ", FMT, "~n", ?color_none]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+
 %%-endif.

@@ -7,7 +7,10 @@
 -module(user_default).
 
 
--export([reload/1]).
+-export([reload/0, reload/1]).
+
+reload() ->
+    reload(no_app).
 
 reload(AppName) ->
     ListDir =

@@ -8,7 +8,7 @@
 
 -include("erl_pub.hrl").
 
--export([start/0, illegal_character/1, execute/1]).
+-export([start/0, illegal_character/1, execute/1, execute/2]).
 
 
 start() ->
@@ -27,9 +27,12 @@ illegal_character(K, [Char | Chars]) ->
 
 
 execute(SQL) ->
+    execute(platform_pool, SQL).
+
+execute(Pool, SQL) ->
     Sql = iolist_to_binary(SQL),
 %%    io:format("SQL:~ts~n", [Sql]),
-    try emysql:execute(platform_pool, Sql, 10000) of
+    try emysql:execute(Pool, Sql, 10000) of
         {result_packet, _, _, Data, _} ->
             Data;
         [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R] ->
