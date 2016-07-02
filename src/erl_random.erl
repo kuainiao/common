@@ -5,9 +5,17 @@
 %%%-------------------------------------------------------------------
 -module(erl_random).
 
--export([random/1]).
+-export([random/1, random/2]).
 
 random(Max) ->
-    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
-    random:seed({A, B, C}),
+    seed(),
     random:uniform(Max).
+
+random(Min, Max) ->
+    seed(),
+    random:uniform(Max - Min + 1) + Min - 1.
+
+
+seed() ->
+    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+    random:seed({A, B, C}).
