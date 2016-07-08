@@ -5,7 +5,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_time).
 
--export([now/0, times/0, sec_to_localtime/1, zero_times/0]).
+-export([now/0, times/0, times/1, sec_to_localtime/1, zero_times/0]).
 
 now() ->
 %%    os:system_time(seconds).
@@ -14,6 +14,10 @@ now() ->
 times() ->
     {MegaSec, Sec, _MilliSec} = os:timestamp(),
     MegaSec * 1000000 + Sec.
+
+times(milli_seconds) ->
+    {MegaSec, Sec, _MilliSec} = os:timestamp(),
+    MegaSec * 1000000000 + Sec * 1000 + (_MilliSec div 1000).
 
 sec_to_localtime(Times) ->
     MSec = Times div 1000000,
