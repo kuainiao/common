@@ -9,4 +9,9 @@
 -include("erl_common.hrl").
 -include("erl_err_code.hrl").
 
--define(return_error(Err), erlang:throw({error, Err})).
+-define(return_err(Err), erlang:throw({throw, Err})).
+-define(assert(Fun, Ret, Err), if Fun =:= Ret -> ok; true -> erlang:throw({throw, Err}) end).
+
+-define(mysql_dynamic_pool, dynamic_pool).
+-define(mysql_static_pool,  static_pool).
+-define(mysql_log_pool,     log_pool).

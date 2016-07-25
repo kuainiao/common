@@ -8,7 +8,7 @@
 
 -include("erl_pub.hrl").
 
--export([start/0, illegal_character/1, execute/1, execute/2]).
+-export([start/0, illegal_character/1, execute/1, execute/2, ed/1, es/1, el/1]).
 
 
 start() ->
@@ -27,11 +27,20 @@ illegal_character(K, [Char | Chars]) ->
 
 
 execute(SQL) ->
-    execute(platform_pool, SQL).
+    execute(?mysql_dynamic_pool, SQL).
+
+ed(SQL) ->
+    execute(?mysql_dynamic_pool, SQL).
+
+es(SQL) ->
+    execute(?mysql_static_pool, SQL).
+
+el(SQL) ->
+    execute(?mysql_log_pool, SQL).
 
 execute(Pool, SQL) ->
     Sql = iolist_to_binary(SQL),
-%%    io:format("SQL:~ts~n", [Sql]),
+    io:format("SQL:~ts~n", [Sql]),
     try emysql:execute(Pool, Sql, 10000) of
         {result_packet, _, _, Data, _} ->
             Data;
@@ -43,10 +52,10 @@ execute(Pool, SQL) ->
             ok;
         _Error ->
             io:format("emysql:execute error:~p~n SQL:~ts~n", [_Error, Sql]),
-            ?return_error('ERR_EXEC_SQL_ERR')
+            ?return_err('ERR_EXEC_SQL_ERR')
     catch
         _E1:_E2 ->
             io:format("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
-            ?return_error('ERR_EXEC_SQL_ERR')
+            ?return_err('ERR_EXEC_SQL_ERR')
     end.
 

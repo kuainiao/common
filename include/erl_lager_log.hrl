@@ -39,6 +39,16 @@
 %%
 %%-else.
 
+%%-ifdef(env_product).
+%%
+%%-define(INFO(MSG),          ok).
+%%-define(INFO(FMT, ARGS),    ok).
+%%-define(WARN(MSG),          ok).
+%%-define(WARN(FMT, ARGS),    ok).
+%%-define(ERROR(MSG),         ok).
+%%-define(ERROR(FMT, ARGS),   ok).
+
+    
 -ifdef(linux).
 
 -define(INFO(MSG),          io:format(?color_green"~p [INFO] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
@@ -58,4 +68,3 @@
 -define(ERROR(FMT, ARGS),   io:format(lists:append(["~p [ERROR] [~s:~B] ", FMT, "~n"]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 
 -endif.
-%%-endif.
