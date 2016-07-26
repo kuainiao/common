@@ -40,7 +40,7 @@ el(SQL) ->
 
 execute(Pool, SQL) ->
     Sql = iolist_to_binary(SQL),
-    io:format("SQL:~ts~n", [Sql]),
+    ?WARN("SQL:~ts~n", [Sql]),
     try emysql:execute(Pool, Sql, 10000) of
         {result_packet, _, _, Data, _} ->
             Data;
@@ -51,11 +51,11 @@ execute(Pool, SQL) ->
         [{ok_packet, _, _, _, __, _, _} | _] ->
             ok;
         _Error ->
-            io:format("emysql:execute error:~p~n SQL:~ts~n", [_Error, Sql]),
+            ?ERROR("emysql:execute error:~p~n SQL:~ts~n", [_Error, Sql]),
             ?return_err('ERR_EXEC_SQL_ERR')
     catch
         _E1:_E2 ->
-            io:format("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
+            ?ERROR("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
             ?return_err('ERR_EXEC_SQL_ERR')
     end.
 

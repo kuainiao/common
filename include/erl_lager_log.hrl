@@ -39,16 +39,8 @@
 %%
 %%-else.
 
-%%-ifdef(env_product).
-%%
-%%-define(INFO(MSG),          ok).
-%%-define(INFO(FMT, ARGS),    ok).
-%%-define(WARN(MSG),          ok).
-%%-define(WARN(FMT, ARGS),    ok).
-%%-define(ERROR(MSG),         ok).
-%%-define(ERROR(FMT, ARGS),   ok).
+-ifdef(debug).
 
-    
 -ifdef(linux).
 
 -define(INFO(MSG),          io:format(?color_green"~p [INFO] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
@@ -60,6 +52,8 @@
 
 -else.
 
+%%-ifdef(windows).
+
 -define(INFO(MSG),          io:format("~p [INFO] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
 -define(INFO(FMT, ARGS),    io:format("~p [INFO] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(WARN(MSG),          io:format("~p [WARN] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
@@ -68,3 +62,15 @@
 -define(ERROR(FMT, ARGS),   io:format(lists:append(["~p [ERROR] [~s:~B] ", FMT, "~n"]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 
 -endif.
+-else.
+
+-define(INFO(MSG),          ok).
+-define(INFO(FMT, ARGS),    ok).
+-define(WARN(MSG),          ok).
+-define(WARN(FMT, ARGS),    ok).
+-define(ERROR(MSG),         error_logger:error_msg(MSG)).
+-define(ERROR(FMT, ARGS),   error_logger:error_msg(FMT, ARGS)).
+
+-endif.
+
+
