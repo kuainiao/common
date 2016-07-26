@@ -37,29 +37,38 @@
     comment
 }).
 
-main([]) ->
-    {ok, Pools} = application:get_env(emysql, pools),
-    lists:map(
-        fun({_, Config}) ->
-            {_, Database} = lists:keyfind(database, 1, Config),
-            Database
-        end,
-        Pools);
 
+main() ->
+    crypto:start(),
+    emysql:start(),
+    {ok, Pools} = application:get_env(emysql, pools),
+    DBPools = lists:map(
+        fun({Pool, Config}) ->
+            {_, Database} = lists:keyfind(database, 1, Config),
+            {Pool, Database}
+        end,
+        Pools),
+    case DBPools of
+        [] -> ok;
+        _ ->
+            main(DBPools)
+    end.
 
 main(Databases) ->
     crypto:start(),
     emysql:start(),
-    Fun = fun(Database) ->
-        AllTable = erl_mysql:execute(<<"select TABLE_NAME from information_schema.`TABLES` where TABLE_SCHEMA = '", (list_to_binary(Database))/binary, "';">>),
-        AllRecord = lists:map(fun([TableName]) -> table(TableName) end, AllTable),
-        file:write_file(<<"./src/auto/mysql/mysql_tab_record.hrl">>, AllRecord)
-          end,
-    lists:map(Fun, Databases).
+    Fun =
+        fun({Pool, Database}) ->
+            AllTable = erl_mysql:execute(Pool, <<"select TABLE_NAME from information_schema.`TABLES` where TABLE_SCHEMA = '", (list_to_binary(Database))/binary, "';">>),
+            put(pool, Pool),
+            lists:map(fun([TableName]) -> table(Pool, TableName) end, AllTable)
+        end,
+    AllRecord = lists:map(Fun, Databases),
+    file:write_file(<<"./src/auto/mysql/mysql_tab_record.hrl">>, AllRecord).
 
 
-table(TableName) ->
-    Fields = erl_mysql:execute(<<"SHOW FULL FIELDS  FROM `platform_info`.`", TableName/binary, "`;">>),
+table(Pool, TableName) ->
+    Fields = erl_mysql:execute(Pool, <<"SHOW FULL FIELDS  FROM `", TableName/binary, "`;">>),
     Fun =
         fun([Field, Type, _Encode, IsNull, Index, Default, _Extra, _Privileges, _Comment]) ->
             {DataType, TypeSize} = check_type(Type),
@@ -74,7 +83,7 @@ table(TableName) ->
         end,
     NewFields = lists:map(Fun, Fields),
     {Data, Hrl} = to_erl(TableName, Fields, NewFields),
-
+    
     os:cmd("mkdir -p ./src/auto/mysql"),
     file:write_file(<<"./src/auto/mysql/", TableName/binary, ".erl">>, Data),
     Hrl.
@@ -83,7 +92,7 @@ table(TableName) ->
 to_erl(TableName, OldFields, Fields) ->
     ToRecord = [{Field#field.field, Field#field.default, Field#field.comment} || Field <- Fields],
     ToInsert = [{Field#field.field, Field#field.default, Field#field.comment} || Field <- Fields, Field#field.extra =/= <<"auto_increment">>],
-    PRIList = [{Field, Default} || #field{field = Field, key = Key, default = Default} <- Fields, Key =:= <<"PRI">>],
+    PRIList = [{Field, ErlType} || #field{field = Field, erl_type = ErlType, key = Key} <- Fields, Key =:= <<"PRI">>],
     OtherList = [{Field, Default} || #field{field = Field, key = Key, default = Default} <- Fields, Key =/= <<"PRI">> andalso Key =/= <<"MUL">> andalso Key =/= <<"UNI">>],
     FieldsRecord = [{K, DataType, TypeSize, IsNull, Default} || #field{field = K, erl_type = DataType, type_size = TypeSize, is_null = IsNull, default = Default} <- Fields],
     {
@@ -97,7 +106,7 @@ to_erl(TableName, OldFields, Fields) ->
             to_select(TableName, ToRecord),
             to_validate(),
             to_validate(FieldsRecord),
-            to_default(TableName, ToRecord)
+            to_default(TableName, [{Field#field.field, Field#field.erl_type, Field#field.default, Field#field.comment} || Field <- Fields])
         ],
         to_record(TableName, ToRecord)
     }.
