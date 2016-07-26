@@ -15,3 +15,4 @@
 -define(mysql_dynamic_pool, dynamic_pool).
 -define(mysql_static_pool,  static_pool).
 -define(mysql_log_pool,     log_pool).
+-define(mysql_gm_tool,      gm_pool).

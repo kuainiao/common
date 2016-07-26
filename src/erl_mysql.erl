@@ -8,14 +8,14 @@
 
 -include("erl_pub.hrl").
 
--export([start/0, illegal_character/1, execute/1, execute/2, ed/1, es/1, el/1]).
+-export([start/0, illegal_character/1, execute/1, execute/2, ed/1, es/1, el/1, eg/1]).
 
 
 start() ->
     emysql:start().
 
 
--define(ILLEGAL_CHARACTER, [<<"\'">>, <<"`">>, <<"\\">>]).
+-define(ILLEGAL_CHARACTER, [<<"\'">>, <<"`">>]).
 illegal_character(K) -> illegal_character(K, ?ILLEGAL_CHARACTER).
 
 illegal_character(_K, []) -> true;
@@ -27,7 +27,7 @@ illegal_character(K, [Char | Chars]) ->
 
 
 execute(SQL) ->
-    execute(?mysql_dynamic_pool, SQL).
+    execute(?mysql_gm_tool, SQL).
 
 ed(SQL) ->
     execute(?mysql_dynamic_pool, SQL).
@@ -37,6 +37,9 @@ es(SQL) ->
 
 el(SQL) ->
     execute(?mysql_log_pool, SQL).
+
+eg(SQL) ->
+    execute(?mysql_gm_tool, SQL).
 
 execute(Pool, SQL) ->
     Sql = iolist_to_binary(SQL),

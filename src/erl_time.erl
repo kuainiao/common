@@ -5,7 +5,10 @@
 %%%-------------------------------------------------------------------
 -module(erl_time).
 
--export([now/0, times/0, times/1, sec_to_localtime/1, zero_times/0]).
+-export([now/0, times/0, times/1, zero_times/0,
+    localtime_to_now/1, sec_to_localtime/1,
+    time2timer/1
+]).
 
 now() ->
 %%    os:system_time(seconds).
@@ -25,6 +28,10 @@ sec_to_localtime(Times) ->
     calendar:now_to_local_time({MSec, Sec, 0}).
 
 
+-define(TIMES_START_DATE, 62167248000). %calendar:datetime_to_gregorian_seconds({{1970,1,1}, {0,0,0}})+3600*8.
+localtime_to_now({Date, Time}) ->
+    calendar:datetime_to_gregorian_seconds({Date, Time}) - ?TIMES_START_DATE.
+
 zero_times() ->
     Times = times(),
     case erlang:time() of
@@ -33,3 +40,8 @@ zero_times() ->
         {H, M, S} ->
             Times - (3600 * H + 60 * M + S)
     end.
+
+%2016-07-19 00:00:00
+time2timer(Time) ->
+    [Y, M, D, H, Mi, S] = binary:split(Time, [<<"-">>, <<" ">>, <<":">>], [global]),
+    localtime_to_now({{binary_to_integer(Y), binary_to_integer(M), binary_to_integer(D)}, {binary_to_integer(H), binary_to_integer(Mi), binary_to_integer(S)}}).

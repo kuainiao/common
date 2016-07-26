@@ -3,7 +3,7 @@ to_module(Mod) ->
     {H, Mi, S} = erlang:time(),
     Time = <<(integer_to_binary(Y))/binary, "-", (integer_to_binary(M))/binary, "-", (integer_to_binary(D))/binary,
         " ", (integer_to_binary(H))/binary, ":", (integer_to_binary(Mi))/binary, ":", (integer_to_binary(S))/binary>>,
-
+    
     <<"%%%-------------------------------------------------------------------
 %%% @doc 自动生成，请不要手动编辑
 %%%
@@ -20,7 +20,7 @@ to_module(Mod) ->
 to_record(Tab, KvList) ->
     Foldl =
         fun({K, Default, Comment}, {Acc, {Index, Totle}}) ->
-            NewK = iolist_to_binary(erl_io:format("~-20s", [K])),
+            NewK = iolist_to_binary(erl_io:format("~-26s", [K])),
             NewComment = case Comment of
                              <<>> -> <<"\n">>;
                              _ -> <<" % ", Comment/binary, "\n">>
@@ -39,7 +39,7 @@ to_record(Tab, KvList) ->
             end
         end,
     {NewRecord, _} = lists:foldl(Foldl, {<<>>, {1, length(KvList)}}, KvList),
-
+    
     <<"-record(", Tab/binary, ", {
 ", NewRecord/binary, "
 }).
@@ -57,10 +57,10 @@ to_field(Fields) ->
 
 to_insert(Tab, KvList) ->
     Fields = fun_arg(KvList),
-
+    
     Foldl =
         fun({K, _Default, _Comment}, {FunAcc, Values, Can}) ->
-
+            
             Variate = list_to_binary(string:to_upper(binary_to_list(K))),
             Fun = <<"            ", Variate/binary, " = Fun(Record#", Tab/binary, ".", K/binary, "),\n">>,
             NewV = <<"                \",", Variate/binary, "/binary, \"">>,
@@ -79,14 +79,14 @@ to_insert(Tab, KvList) ->
             {<<FunAcc/binary, Fun/binary>>, Values1, Can1}
         end,
     {FunArg, NewValues, NewCan} = lists:foldl(Foldl, {<<>>, <<>>, <<>>}, KvList),
-
+    Pool = list_to_binary(atom_to_list(get(pool))),
     <<"
 
 
 insert(Record) ->
     case insert(Record, sql) of
         {error, Err} -> {error, Err};
-        Sql -> erl_mysql:execute(Sql)
+        Sql -> erl_mysql:execute(", Pool/binary, ", Sql)
     end.
 
 insert(Record, sql) ->
@@ -119,11 +119,11 @@ to_delete(Tab, []) ->
 
 ">>;
 to_delete(Tab, PRIList) ->
-    Foldl = fun({Field, Default}, {Arg, Fun, Where}) ->
+    Foldl = fun({Field, ErlType}, {Arg, Fun, Where}) ->
         Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
         Can = fun_can(Tab, Field, Variate),
-        SqlWhere = fun_where(Field, Variate, Default),
-
+        SqlWhere = fun_where(Field, Variate, ErlType),
+        
         Arg2 = if
                    Arg == <<>> -> Variate;
                    true -> <<Arg/binary, ",", Variate/binary>>
@@ -139,11 +139,11 @@ to_delete(Tab, PRIList) ->
         {Arg2, Fun2, Where2}
             end,
     {NewArg, NewFun, NewWhere} = lists:foldl(Foldl, {<<>>, <<>>, <<>>}, PRIList),
-
+    Pool = list_to_binary(atom_to_list(get(pool))),
     <<"delete(", NewArg/binary, ") ->
     case delete(", NewArg/binary, ", sql) of
         {error, Err} -> {error, Err};
-        Sql -> erl_mysql:execute(Sql)
+        Sql -> erl_mysql:execute(", Pool/binary, ", Sql)
     end.
 
 delete(", NewArg/binary, ", sql) ->
@@ -170,9 +170,9 @@ to_update(Tab, _, [], _) ->
 
 to_update(Tab, PRIList, _OtherList, CanKvList) ->
     Foldl =
-        fun({Field, Default}, {Pri, Where, Num}) ->
+        fun({Field, ErlType}, {Pri, Where, Num}) ->
             Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
-            SqlWhere = fun_where(Field, Variate, Default),
+            SqlWhere = fun_where(Field, Variate, ErlType),
             NewWhere = if
                            Where == <<>> -> SqlWhere;
                            true -> <<Where/binary, " AND ", SqlWhere/binary>>
@@ -187,7 +187,7 @@ to_update(Tab, PRIList, _OtherList, CanKvList) ->
         end,
     {NewPri, NewWhere, _} = lists:foldl(Foldl, {<<>>, <<>>, 0}, PRIList),
     Len = length(PRIList),
-
+    
     NewCan = lists:foldl(
         fun({K, _V, _Comment}, Fields) ->
             if
@@ -197,11 +197,11 @@ to_update(Tab, PRIList, _OtherList, CanKvList) ->
                     <<Fields/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
             end
         end, <<>>, CanKvList),
-
+    Pool = list_to_binary(atom_to_list(get(pool))),
     <<"update(Record) ->
     case update(Record, sql) of
         {error, Err} -> {error, Err};
-        Sql -> erl_mysql:execute(Sql)
+        Sql -> erl_mysql:execute(", Pool/binary, ", Sql)
     end.
 
 update(Record, sql) ->
@@ -241,16 +241,16 @@ to_lookup(Tab, _, _, []) ->
 
 to_lookup(Tab, KvList, PRIList, _OtherList) ->
     Foldl =
-        fun({Field, Default}, {Arg, Fun, Where}) ->
+        fun({Field, ErlType}, {Arg, Fun, Where}) ->
             Variate = list_to_binary(string:to_upper(binary_to_list(Field))),
             Can = fun_can(Tab, Field, Variate),
-            SqlWhere = fun_where(Field, Variate, Default),
-
+            SqlWhere = fun_where(Field, Variate, ErlType),
+            
             Arg2 = if
                        Arg == <<>> -> Variate;
                        true -> <<Arg/binary, ",", Variate/binary>>
                    end,
-
+            
             Fun2 = if
                        Fun == <<>> -> Can;
                        true -> <<Fun/binary, ",", Can/binary>>
@@ -262,17 +262,20 @@ to_lookup(Tab, KvList, PRIList, _OtherList) ->
             {Arg2, Fun2, Where2}
         end,
     {NewArg, NewFun, NewWhere} = lists:foldl(Foldl, {<<>>, <<>>, <<>>}, PRIList),
-
+    
     NewFields = fun_arg(KvList),
     Data = list_to_binary(string:join([string:to_upper(binary_to_list(K)) || {K, _D, _C} <- KvList], ", ")),
     RecordData = list_to_binary(string:join([binary_to_list(K) ++ " = " ++ string:to_upper(binary_to_list(K)) || {K, _D, _C} <- KvList], ", ")),
-
+    Pool = list_to_binary(atom_to_list(get(pool))),
     <<"lookup(", NewArg/binary, ") ->
     case lookup(", NewArg/binary, ", sql) of
         {error, _Err} -> {error, _Err};
         Sql ->
-            [[", Data/binary, "]] = erl_mysql:execute(Sql),
-            #", Tab/binary, "{", RecordData/binary, "}
+            case erl_mysql:execute(", Pool/binary, ", Sql) of
+                [] -> [];
+                [[", Data/binary, "]] ->
+                    #", Tab/binary, "{", RecordData/binary, "}
+            end
     end.
 
 lookup(", NewArg/binary, ", sql) ->
@@ -295,7 +298,7 @@ to_select(Tab, KvList) ->
     Fields = fun_arg(KvList),
     Foldl =
         fun({Field, _Default, _Comment}, {AccField, RFCEncode}) ->
-
+            
             NewAccField =
                 if
                     AccField =:= <<>> -> list_to_binary(string:to_upper(binary_to_list(Field)));
@@ -311,12 +314,13 @@ to_select(Tab, KvList) ->
             {NewAccField, NewRFCEncode}
         end,
     {NewField, NewEncode} = lists:foldl(Foldl, {<<>>, <<>>}, KvList),
+    Pool = list_to_binary(atom_to_list(get(pool))),
     <<"select(SelectKvList, StartIndex, SortKey, SortType ) ->
     SIndex = integer_to_binary(StartIndex),
     case select(SelectKvList, SIndex, <<\"30\">>, SortKey, SortType, sql) of
         {error, Err} -> {error, Err};
         Sql ->
-            [[[Count]], Ret] = erl_mysql:execute(Sql),
+            [[[Count]], Ret] = erl_mysql:execute(", Pool/binary, ", Sql),
             Fun =
                 fun([", NewField/binary, "]) ->
                     {obj, [", NewEncode/binary, "]}
@@ -378,7 +382,7 @@ to_validate(FieldsRecord) ->
         fun({K, DataType, TypeSize, IsNull, Default}) ->
             KArg = list_to_binary(string:to_upper(binary_to_list(K))),
             CheckNull = if
-                            IsNull =:= <<"NO">> -> <<"(", KArg/binary, "=/= <<\"", Default/binary, "\">>)">>;
+                            IsNull =:= <<"NO">> -> <<"(", KArg/binary, "=:= <<\"", Default/binary, "\">>)">>;
                             true -> <<"">>
                         end,
             {CheckType, Illegal} =
@@ -407,27 +411,38 @@ to_validate(FieldsRecord) ->
 
 to_default(Tab, ToRecord) ->
     {ToDefaultAcc, ToIndexAcc} = lists:foldl(
-        fun({K, Default, _Comment}, {ToDefault, ToIndex}) ->
+        fun({K, ErlType, Default, _Comment}, {ToDefault, ToIndex}) ->
+            V = if
+                    ErlType =:= int andalso _Comment =:= <<"时间戳"/utf8>> -> <<"erl_time:time2timer(V)">>;
+                    ErlType =:= int -> <<"erl_type:t2t(V, binary, integer)">>;
+                    true -> <<"V">>
+                end,
+            NewK = <<"<<\"", K/binary, "\">>">>,
+            
             if
                 ToDefault =:= <<>> ->
                     {
-                        <<"to_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>,
-                        <<"to_index(", K/binary, ") -> #", Tab/binary, ".", K/binary>>
+                        <<"to_default(", NewK/binary, ") -> <<\"", Default/binary, "\">>">>,
+                        <<"to_index(", NewK/binary, ", V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>
                     };
                 true ->
                     {
-                        <<ToDefault/binary, ";\nto_default(", K/binary, ") -> <<\"", Default/binary, "\">>">>,
-                        <<ToIndex/binary, ";\nto_index(", K/binary, ") -> #", Tab/binary, ".", K/binary>>
+                        <<ToDefault/binary, ";\nto_default(", NewK/binary, ") -> <<\"", Default/binary, "\">>">>,
+                        <<ToIndex/binary, ";\nto_index(", NewK/binary, ", V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>
                     }
             end
         end, {<<>>, <<>>}, ToRecord),
-
+    
     <<"
 
 ", ToDefaultAcc/binary, ".
 
 
-", ToIndexAcc/binary, ".">>.
+", ToIndexAcc/binary, ".
+
+
+record() -> #", Tab/binary, "{}.
+record_info() -> record_info(fields, ", Tab/binary, ").">>.
 
 
 
@@ -443,10 +458,10 @@ fun_arg(AccRecord) ->
 fun_can(Tab, Field, Variate) ->
     <<"\n        fun() -> validate(", Tab/binary, ", '", Field/binary, "', ", Variate/binary, ") end">>.
 
-fun_where(Field, FieldArg, V) ->
+fun_where(Field, Variate, ErlType) ->
     if
-        is_integer(V) ->
-            <<Field/binary, " = \",(integer_to_binary(", Field/binary, "))/binary, \"">>;
-        is_binary(V) ->
-            <<Field/binary, " = '\",", FieldArg/binary, "/binary, \"'">>
+        ErlType =:= int ->
+            <<Field/binary, " = \",(integer_to_binary(", Variate/binary, "))/binary, \"">>;
+        true ->
+            <<Field/binary, " = '\",", Variate/binary, "/binary, \"'">>
     end.
