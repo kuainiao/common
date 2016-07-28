@@ -412,11 +412,19 @@ to_validate(FieldsRecord) ->
 to_default(Tab, ToRecord) ->
     {ToDefaultAcc, ToIndexAcc} = lists:foldl(
         fun({K, ErlType, Default, _Comment}, {ToDefault, ToIndex}) ->
-            V = if
-                    ErlType =:= int andalso _Comment =:= <<"时间戳"/utf8>> -> <<"erl_time:time2timer(V)">>;
-                    ErlType =:= int -> <<"erl_type:t2t(V, binary, integer)">>;
-                    true -> <<"V">>
+            V = case binary:match(_Comment, <<"时间戳"/utf8>>) of
+                    nomatch ->
+                        if
+                            ErlType =:= int -> <<"erl_type:t2t(V, binary, integer)">>;
+                            true -> <<"V">>
+                        end;
+                    _ ->
+                        if
+                            ErlType =:= int -> <<"erl_time:time2timer(V)">>;
+                            true -> <<"V">>
+                        end
                 end,
+            
             NewK = <<"<<\"", K/binary, "\">>">>,
             
             if
