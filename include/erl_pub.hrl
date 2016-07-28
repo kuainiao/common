@@ -12,6 +12,7 @@
 -define(return_err(Err), erlang:throw({throw, Err})).
 -define(assert(Fun, Ret, Err), if Fun =:= Ret -> ok; true -> erlang:throw({throw, Err}) end).
 
+-define(mysql_account_pool, account_pool).
 -define(mysql_dynamic_pool, dynamic_pool).
 -define(mysql_static_pool,  static_pool).
 -define(mysql_log_pool,     log_pool).
