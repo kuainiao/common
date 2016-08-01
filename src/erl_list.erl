@@ -6,7 +6,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_list).
 
--export([move/4, lists_spawn/2]).
+-export([move/4, lists_spawn/2, diff/3, diff_kv/3]).
 
 %%  @doc 调换顺序
 move(0, FromItem, ToItem, List) ->
@@ -61,3 +61,24 @@ lists_spawn(Fun, Lists) ->
                 Pid ! {Ref, Res}
             end) || I <- Lists]
     ].
+
+
+
+diff([], _Ids, DelAcc) -> DelAcc;
+diff([OldId | OldIds], Ids, DelAcc) ->
+    case lists:member(OldId, Ids) of
+        true ->
+            diff(OldIds, Ids, DelAcc);
+        false ->
+            diff(OldIds, Ids, [OldId | DelAcc])
+    end.
+
+
+diff_kv([], _Channels, Acc) -> Acc;
+diff_kv([K | OldChannels], Channels, Acc) ->
+    case lists:keymember(K, 2, Channels) of
+        true ->
+            diff_kv(OldChannels, Channels, Acc);
+        false ->
+            diff_kv(OldChannels, Channels, [K | Acc])
+    end.
