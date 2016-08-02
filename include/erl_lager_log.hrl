@@ -47,8 +47,14 @@
 -define(INFO(FMT, ARGS),    io:format(?color_green"~p [INFO] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(WARN(MSG),          io:format(?color_yellow"~p [WARN] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
 -define(WARN(FMT, ARGS),    io:format(?color_yellow"~p [WARN] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
--define(ERROR(MSG),         io:format(?color_red"~p [ERROR] [~s:~B] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
--define(ERROR(FMT, ARGS),   io:format(lists:append([?color_red, "~p [ERROR] [~s:~B] ", FMT, "~n", ?color_none]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(ERROR(MSG),         io:format(?color_red"~p [ERROR] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(ERROR(FMT, ARGS),   io:format(?color_red"~p [ERROR] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(LOG(MSG),           io:format(?color_blue"~p [LOG] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(LOG(FMT, ARGS),     io:format(?color_blue"~p [LOG] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(DEBUG(MSG),           io:format(?color_purple"~p [DEBUG] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(DEBUG(FMT, ARGS),     io:format(?color_purple"~p [DEBUG] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+
+
 
 -else.
 
@@ -58,8 +64,13 @@
 -define(INFO(FMT, ARGS),    io:format("~p [INFO] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(WARN(MSG),          io:format("~p [WARN] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
 -define(WARN(FMT, ARGS),    io:format("~p [WARN] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
--define(ERROR(MSG),         io:format("~p [ERROR] [~s:~B] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
--define(ERROR(FMT, ARGS),   io:format(lists:append(["~p [ERROR] [~s:~B] ", FMT, "~n"]), [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(ERROR(MSG),         io:format("~p [ERROR] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
+-define(ERROR(FMT, ARGS),   io:format("~p [ERROR] [~s:~b] " FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(LOG(MSG),           io:format("~p [LOG] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
+-define(LOG(FMT, ARGS),     io:format("~p [LOG] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+-define(DEBUG(MSG),         io:format("~p [DEBUG] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
+-define(DEBUG(FMT, ARGS),   io:format("~p [DEBUG] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
+
 
 -endif.
 -else.
@@ -70,6 +81,10 @@
 -define(WARN(FMT, ARGS),    ok).
 -define(ERROR(MSG),         error_logger:error_msg(MSG)).
 -define(ERROR(FMT, ARGS),   error_logger:error_msg(FMT, ARGS)).
+-define(LOG(MSG),           ok).
+-define(LOG(FMT, MSG),      ok).
+-define(DEBUG(MSG),         ok).
+-define(DEBUG(FMT, ARGS),   ok).
 
 -endif.
 

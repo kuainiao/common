@@ -61,7 +61,7 @@ execute(Pool, Num, Sql) ->
     catch
         _E1:_E2 ->
             ?ERROR("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
-            timer:sleep(1000),
+            timer:sleep(3000),
             execute(Pool, Num + 1, Sql)
     end.
 
