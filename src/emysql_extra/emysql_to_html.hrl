@@ -72,9 +72,9 @@ to_insert(Tab, KvList) ->
             Can1 =
                 if
                     Can =:= <<>> ->
-                        <<"        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>;
+                        <<"        fun() -> validate(", Tab/binary, ", <<\"", K/binary, "\">>, Record#", Tab/binary, ".", K/binary, ") end">>;
                     true ->
-                        <<Can/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
+                        <<Can/binary, ",\n        fun() -> validate(", Tab/binary, ", <<\"", K/binary, "\">>, Record#", Tab/binary, ".", K/binary, ") end">>
                 end,
             {<<FunAcc/binary, Fun/binary>>, Values1, Can1}
         end,
@@ -179,7 +179,7 @@ to_update(Tab, PRIList, _OtherList, CanKvList) ->
                        end,
             NewPri = if
                          Pri =:= <<>> ->
-                             <<"{value, {_, ", Variate/binary, "}, FieldData", (integer_to_binary(Num))/binary, "} = lists:keytake(", Field/binary, ", 1, FieldData),">>;
+                             <<"{value, {_, ", Variate/binary, "}, FieldData", (integer_to_binary(Num))/binary, "} = lists:keytake(<<\"", Field/binary, "\">>, 1, FieldData),">>;
                          true ->
                              <<Pri/binary, "\n            {value, {_, ", Variate/binary, "}, FieldData", (integer_to_binary(Num))/binary, "} = lists:keytake(", Field/binary, ", 1, FieldData", (integer_to_binary(Num - 1))/binary, "),">>
                      end,
@@ -192,9 +192,9 @@ to_update(Tab, PRIList, _OtherList, CanKvList) ->
         fun({K, _V, _Comment}, Fields) ->
             if
                 Fields =:= <<>> ->
-                    <<"        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>;
+                    <<"        fun() -> validate(", Tab/binary, ", <<\"", K/binary, "\">>, Record#", Tab/binary, ".", K/binary, ") end">>;
                 true ->
-                    <<Fields/binary, ",\n        fun() -> validate(", Tab/binary, ", '", K/binary, "', Record#", Tab/binary, ".", K/binary, ") end">>
+                    <<Fields/binary, ",\n        fun() -> validate(", Tab/binary, ", <<\"", K/binary, "\">>, Record#", Tab/binary, ".", K/binary, ") end">>
             end
         end, <<>>, CanKvList),
     Pool = list_to_binary(atom_to_list(get(pool))),
@@ -210,12 +210,23 @@ update(Record, sql) ->
     ]) of
         {ok, FieldData} ->
             ", NewPri/binary, "
-            {SetAcc, _} = lists:foldl(
+            SetAcc = lists:foldl(
                 fun({K, Default}, Acc) ->
                     case to_default(K) of
                         Default -> Acc;
                         _ ->
-                            <<Acc/binary, \",\", K/binary, \" = \", Default/binary>>
+                            case to_default(K) of
+                                Default -> Acc;
+                                _ ->
+                                    V = if
+                                            is_integer(Default) -> integer_to_binary(Default);
+                                            true -> <<\"'\", Default/binary, \"'\">>
+                                        end,
+                                    if
+                                        Acc =:= <<>> -> <<K/binary, \" = \", V/binary>>;
+                                        true -> <<Acc/binary, \",\", K/binary, \" = \", V/binary>>
+                                    end
+                            end
                     end
                 end,
                 <<>>,
@@ -399,9 +410,9 @@ to_validate(FieldsRecord) ->
                 end,
             if
                 CheckNull =:= <<"">> ->
-                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckType/binary, Illegal/binary, ";\n">>;
+                    <<"validate(<<\"", K/binary, "\">>, ", KArg/binary, ") -> ", CheckType/binary, Illegal/binary, ";\n">>;
                 true ->
-                    <<"validate('", K/binary, "', ", KArg/binary, ") -> ", CheckNull/binary, " orelse ", CheckType/binary, Illegal/binary, ";\n">>
+                    <<"validate(<<\"", K/binary, "\">>, ", KArg/binary, ") -> ", CheckNull/binary, " orelse ", CheckType/binary, Illegal/binary, ";\n">>
             end
         end,
     <<(iolist_to_binary(lists:map(Fun, FieldsRecord)))/binary,
@@ -464,7 +475,7 @@ fun_arg(AccRecord) ->
         end, <<>>, AccRecord).
 
 fun_can(Tab, Field, Variate) ->
-    <<"\n        fun() -> validate(", Tab/binary, ", '", Field/binary, "', ", Variate/binary, ") end">>.
+    <<"\n        fun() -> validate(", Tab/binary, ", <<\"", Field/binary, "\">>, ", Variate/binary, ") end">>.
 
 fun_where(Field, Variate, ErlType) ->
     if
