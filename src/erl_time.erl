@@ -5,14 +5,22 @@
 %%%-------------------------------------------------------------------
 -module(erl_time).
 
--export([now/0, times/0, times/1, zero_times/0,
-    localtime_to_now/1, sec_to_localtime/1,
+-export([now/0, m_now/0,
+    times/0, times/1,
+    zero_times/0,
+    localtime_to_now/1,
+    sec_to_localtime/1,
     time2timer/1
 ]).
 
+%% @doc 获取当前服务器时间的时间戳
 now() ->
 %%    os:system_time(seconds).
     times().
+
+m_now() ->
+    {MegaSec, Sec, MilliSec} = os:timestamp(),
+    MegaSec * 1000000000 + Sec * 1000 + round(MilliSec / 1000).
 
 times() ->
     {MegaSec, Sec, _MilliSec} = os:timestamp(),

@@ -12,7 +12,7 @@ diff_record(OldRecord, NewRecord) ->
     OldName = element(1, OldRecord),
     NewName = element(1, NewRecord),
     if
-        OldName =:= NewName -> NewRecord;
+        OldName =:= NewName -> OldRecord;
         true ->
             OldLen = tuple_size(OldRecord),
             NewLen = tuple_size(NewRecord),

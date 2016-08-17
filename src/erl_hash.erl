@@ -5,12 +5,17 @@
 %%%-------------------------------------------------------------------
 -module(erl_hash).
 
--export([md5/1, md5_to_str/1]).
+-export([md5/1, sha1/1, md5_to_str/1]).
 
 md5(S) ->
     Md5_bin = erlang:md5(S),
     Md5_list = binary_to_list(Md5_bin),
     lists:flatten(list_to_hex(Md5_list)).
+
+sha1(S) ->
+    B = crypto:hash(sha, S),
+    List = binary_to_list(B),
+    lists:flatten(list_to_hex(List)).
 
 list_to_hex(L) ->
     lists:map(fun(X) -> int_to_hex(X) end, L).
