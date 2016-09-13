@@ -53,6 +53,8 @@ execute(Pool, Num, Sql) ->
             [Rows1 || {result_packet, _, _, Rows1, _} <- [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R]];
         {ok_packet, _, _, Data, _, _, _} ->
             Data;
+        [{ok_packet, _, _, Data, _, _, _}, {result_packet, _SeqNum, _FieldList, Rows, _Extra} | _] ->
+            [Data, Rows];
         [{ok_packet, _, _, _, __, _, _} | _] ->
             ok;
         _Error ->
