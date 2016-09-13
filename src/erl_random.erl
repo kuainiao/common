@@ -5,7 +5,21 @@
 %%%-------------------------------------------------------------------
 -module(erl_random).
 
--export([random/1, random/2]).
+-export([rand/2, random/1, random/2]).
+
+
+rand(MaxNum, List) ->
+    L = random(MaxNum),
+    rand_s(L, List, 1).
+
+rand_s(_Num, [], _Index) -> 1;
+rand_s(Num, [H | R], Index) ->
+    if
+        Num =< H -> Index;
+        true ->
+            rand_s(Num - H, R, Index + 1)
+    end.
+
 
 random(Max) ->
     seed(),

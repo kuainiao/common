@@ -7,7 +7,7 @@
 -module(user_default).
 
 
--export([reload/0, reload/1]).
+-export([reload/0, reload/1, stop/0, s/0]).
 
 reload() ->
     reload(no_app).
@@ -18,14 +18,14 @@ reload(AppName) ->
             {ok, S} = file:list_dir(Path),
             S
         end,
-
+    
     AppPath = case code:lib_dir(AppName, ebin) of
                   {error, _} -> "./ebin";
                   Path -> Path
               end,
-
+    
     FileList = ListDir(AppPath),
-
+    
     FunMap =
         fun(I) ->
             case lists:reverse(I) of
@@ -34,3 +34,10 @@ reload(AppName) ->
             end
         end,
     lists:map(FunMap, FileList).
+
+
+stop() ->
+    snakes_app:stop().
+
+s() ->
+    snakes_app:start().

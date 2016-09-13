@@ -10,7 +10,9 @@
 -include("erl_err_code.hrl").
 
 -define(return_err(Err), erlang:throw({throw, Err})).
+
 %%-define(assert(Fun, Ret, Err), if Fun =:= Ret -> ok; true -> erlang:throw({throw, Err}) end).
+
 -define(check(Fun, Msg, Arg),
     case (Fun) of
         true -> true;

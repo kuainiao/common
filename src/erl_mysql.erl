@@ -36,33 +36,35 @@ el(SQL) -> execute(?mysql_log_pool, SQL).
 eg(SQL) -> execute(?mysql_gm_tool, SQL).
 
 execute(Pool, SQL) ->
-    Sql = iolist_to_binary(SQL),
-    ?WARN("SQL:~ts~n", [Sql]),
-    execute(Pool, 0, Sql).
+    case iolist_to_binary(SQL) of
+        <<>> -> ok;
+        Sql ->
+%%            ?WARN("SQL:~ts~n", [SQL]),
+            execute(Pool, 0, Sql)
+    end.
 
 
-execute(_Pool, 6, Sql) ->
-    ?ERROR("sql ex error:sql:~p~n", [Sql]),
+execute(Pool, 6, Sql) ->
+    ?ERROR("sql ex error:pool:~p...sql:~p~n", [Pool, Sql]),
     {error, []};
 
 execute(Pool, Num, Sql) ->
     try emysql:execute(Pool, Sql, 10000) of
-        {result_packet, _, _, Data, _} ->
-            Data;
-        [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R] ->
-            [Rows1 || {result_packet, _, _, Rows1, _} <- [{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R]];
-        {ok_packet, _, _, Data, _, _, _} ->
-            Data;
-        [{ok_packet, _, _, Data, _, _, _}, {result_packet, _SeqNum, _FieldList, Rows, _Extra} | _] ->
-            [Data, Rows];
-        [{ok_packet, _, _, _, __, _, _} | _] ->
-            ok;
-        _Error ->
-            ?ERROR("emysql:execute error:~p~n SQL:~ts~n", [_Error, Sql]),
-            ?return_err('ERR_EXEC_SQL_ERR')
+        {result_packet, _SeqNum, _FieldList, Rows, _Extra} ->
+            Rows;
+        {ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _msg} ->
+            InsertId;
+        Packets ->
+            Fun = fun({result_packet, _SeqNum, _FieldList, Rows, _Extra}) -> Rows;
+                ({ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _msg}) -> InsertId;
+                ({error_packet, SeqNum, Code, Status, Msg}) ->
+                    ?ERROR("emysql:execute error:~p~n POOL:~p...SQL:~ts~n", [{error_packet, SeqNum, Code, Status, Msg}, Pool, Sql]),
+                    ?return_err('ERR_EXEC_SQL_ERR')
+                  end,
+            lists:map(Fun, Packets)
     catch
         _E1:_E2 ->
-            ?ERROR("emysql:execute crash:catch:~p~nwhy:~p~nSQL:~p~n", [_E1, _E2, Sql]),
+            ?ERROR("emysql:execute crash:catch:~p~nwhy:~p~nPool:~p...SQL:~p~n", [_E1, _E2, Pool, Sql]),
             timer:sleep(3000),
             execute(Pool, Num + 1, Sql)
     end.

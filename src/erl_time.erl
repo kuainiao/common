@@ -10,7 +10,8 @@
     zero_times/0,
     localtime_to_now/1,
     sec_to_localtime/1,
-    time2timer/1
+    time2timer/1,
+    times_in_month/1
 ]).
 
 %% @doc 获取当前服务器时间的时间戳
@@ -28,7 +29,11 @@ times() ->
 
 times(milli_seconds) ->
     {MegaSec, Sec, _MilliSec} = os:timestamp(),
-    MegaSec * 1000000000 + Sec * 1000 + (_MilliSec div 1000).
+    MegaSec * 1000000000 + Sec * 1000 + (_MilliSec div 1000);
+
+times(micro_second) ->
+    {MegaSec, Sec, _MilliSec} = os:timestamp(),
+    MegaSec * 1000000000000 + Sec * 1000000 + _MilliSec.
 
 sec_to_localtime(Times) ->
     MSec = Times div 1000000,
@@ -53,3 +58,13 @@ zero_times() ->
 time2timer(Time) ->
     [Y, M, D, H, Mi, S] = binary:split(Time, [<<"-">>, <<" ">>, <<":">>], [global]),
     localtime_to_now({{binary_to_integer(Y), binary_to_integer(M), binary_to_integer(D)}, {binary_to_integer(H), binary_to_integer(Mi), binary_to_integer(S)}}).
+
+
+times_in_month(Times) ->
+    Date = erlang:date(),
+    MTimes = localtime_to_now({Date, {0, 0, 0}}),
+    if
+        Times < MTimes -> false;
+        true -> true
+    end.
+    

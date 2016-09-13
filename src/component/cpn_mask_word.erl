@@ -18,7 +18,7 @@ check(Str) ->
 %%[Str, Res]
 %% Res::true=带敏感字，false=不带敏感字
 checkRes(Str) ->
-    case re:run(Str, get_mask_words(), [global]) of
+    case re:run(Str, get_mask_words(), [global, notempty]) of
         nomatch ->
             [Str, false];
         {match, MatchList} ->

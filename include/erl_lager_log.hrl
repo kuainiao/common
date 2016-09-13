@@ -53,7 +53,8 @@
 -define(LOG(FMT, ARGS),     io:format(?color_blue"~p [LOG] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(DEBUG(MSG),           io:format(?color_purple"~p [DEBUG] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
 -define(DEBUG(FMT, ARGS),     io:format(?color_purple"~p [DEBUG] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
-
+-define(PRINT(MSG),           io:format(?color_cyan"~p [PRINT] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
+-define(PRINT(FMT, ARGS),     io:format(?color_cyan"~p [PRINT] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 
 
 -else.
@@ -70,21 +71,24 @@
 -define(LOG(FMT, ARGS),     io:format("~p [LOG] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(DEBUG(MSG),         io:format("~p [DEBUG] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
 -define(DEBUG(FMT, ARGS),   io:format("~p [DEBUG] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
-
+-define(PRINT(MSG),         io:format("~p [PRINT] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
+-define(PRINT(FMT, ARGS),   io:format("~p [PRINT] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 
 -endif.
 -else.
 
 -define(INFO(MSG),          ok).
 -define(INFO(FMT, ARGS),    ok).
--define(WARN(MSG),          ok).
--define(WARN(FMT, ARGS),    ok).
--define(ERROR(MSG),         error_logger:error_msg(MSG)).
--define(ERROR(FMT, ARGS),   error_logger:error_msg(FMT, ARGS)).
+-define(WARN(MSG),          lager:warning(MSG)).
+-define(WARN(FMT, ARGS),    lager:warning(FMT, ARGS)).
+-define(ERROR(MSG),         lager:error(MSG)).
+-define(ERROR(FMT, ARGS),   lager:error(FMT, ARGS)).
 -define(LOG(MSG),           ok).
 -define(LOG(FMT, MSG),      ok).
 -define(DEBUG(MSG),         ok).
 -define(DEBUG(FMT, ARGS),   ok).
+-define(PRINT(MSG),         ok).
+-define(PRINT(FMT, ARGS),   ok).
 
 -endif.
 
