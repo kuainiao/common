@@ -1,4 +1,4 @@
-{application, erl,
+{application, common,
  [
   {description, ""},
   {vsn, "1"},
@@ -7,6 +7,6 @@
                   kernel,
                   stdlib
                  ]},
-  {mod, { erl_app, []}},
+  {mod, { common_app, []}},
   {env, []}
  ]}.

@@ -48,20 +48,23 @@ execute(Pool, 6, Sql) ->
     ?ERROR("sql ex error:pool:~p...sql:~p~n", [Pool, Sql]),
     {error, []};
 
+
 execute(Pool, Num, Sql) ->
     try emysql:execute(Pool, Sql, 10000) of
         {result_packet, _SeqNum, _FieldList, Rows, _Extra} ->
             Rows;
-        {ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _msg} ->
+        {ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _Msg} ->
             InsertId;
+        {error_packet, _SeqNum, _Code, _Status, _Msg} ->
+            ?ERROR("emysql:execute error:~p~nPool:~p...SQL:~p~n", [{error_packet, _SeqNum, _Code, _Status, _Msg}, Pool, Sql]),
+            ?return_err('ERR_EXEC_SQL_ERR');
         Packets ->
-            Fun = fun({result_packet, _SeqNum, _FieldList, Rows, _Extra}) -> Rows;
-                ({ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _msg}) -> InsertId;
-                ({error_packet, SeqNum, Code, Status, Msg}) ->
-                    ?ERROR("emysql:execute error:~p~n POOL:~p...SQL:~ts~n", [{error_packet, SeqNum, Code, Status, Msg}, Pool, Sql]),
-                    ?return_err('ERR_EXEC_SQL_ERR')
-                  end,
-            lists:map(Fun, Packets)
+            case catch ret(Packets, []) of
+                {throw, 'ERR_EXEC_SQL_ERR'} ->
+                    ?ERROR("emysql:execute error POOL:~p...SQL:~ts~n", [Pool, Sql]),
+                    {error, 'ERR_EXEC_SQL_ERR'};
+                Ret -> Ret
+            end
     catch
         _E1:_E2 ->
             ?ERROR("emysql:execute crash:catch:~p~nwhy:~p~nPool:~p...SQL:~p~n", [_E1, _E2, Pool, Sql]),
@@ -69,3 +72,9 @@ execute(Pool, Num, Sql) ->
             execute(Pool, Num + 1, Sql)
     end.
 
+ret([], Acc) -> lists:reverse(Acc);
+ret([{result_packet, _SeqNum, _FieldList, Rows, _Extra} | R], Acc) -> ret(R, [Rows | Acc]);
+ret([{ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _Msg} | R], Acc) -> ret(R, [InsertId | Acc]);
+ret([{error_packet, _SeqNum, _Code, _Status, _Msg} | _R], _Acc) ->
+    ?ERROR("emysql:execute error:~p~n SQL_FAIL:~p~nSQL_SUCCESS::~p~n", [{error_packet, _SeqNum, _Code, _Status, _Msg}, _R, _Acc]),
+    ?return_err('ERR_EXEC_SQL_ERR').
