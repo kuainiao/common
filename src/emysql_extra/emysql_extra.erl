@@ -84,7 +84,7 @@ table(Pool, TableName) ->
     NewFields = lists:map(Fun, Fields),
     {Data, Hrl} = to_erl(TableName, Fields, NewFields),
     
-    os:cmd("mkdir -p ./src/auto/mysql"),
+    file:make_dir("./src/auto/mysql"),
     file:write_file(<<"./src/auto/mysql/", TableName/binary, ".erl">>, Data),
     Hrl.
 
