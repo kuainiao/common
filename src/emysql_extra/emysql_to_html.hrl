@@ -326,9 +326,9 @@ to_select(Tab, KvList) ->
         end,
     {NewField, NewEncode} = lists:foldl(Foldl, {<<>>, <<>>}, KvList),
     Pool = list_to_binary(atom_to_list(get(pool))),
-    <<"select(SelectKvList, StartIndex, SortKey, SortType ) ->
+    <<"select(SelectKvList, StartIndex, Len, SortKey, SortType ) ->
     SIndex = integer_to_binary(StartIndex),
-    case select(SelectKvList, SIndex, <<\"30\">>, SortKey, SortType, sql) of
+    case select(SelectKvList, SIndex, Len, SortKey, SortType, sql) of
         {error, Err} -> {error, Err};
         Sql ->
             [[[Count]], Ret] = erl_mysql:execute(", Pool/binary, ", Sql),
@@ -345,9 +345,22 @@ select(SelectKvList, StartIndex, Len, SortKey, SortType, sql) ->
             case erl_mysql:illegal_character(Item) of
                 false -> Acc;
                 true ->
+                    Kv = case binary:match(Field, <<\"_begin\">>) of
+                             nomatch ->
+                                 case binary:match(Field, <<\"_end\">>) of
+                                     nomatch ->
+                                         <<Field/binary, \"='\", Item/binary, \"'\">>;
+                                     {Index2, _Pos2} ->
+                                         Field2 = binary:part(Field, 0, Index2),
+                                         <<Field2/binary, \"<\", (integer_to_binary(erl_time:time2timer(Item)))/binary>>
+                                 end;
+                             {Index, _Pos} ->
+                                 Field1 = binary:part(Field, 0, Index),
+                                 <<Field1/binary, \">=\", (integer_to_binary(erl_time:time2timer(Item)))/binary>>
+                         end,
                     if
-                        Acc =:= <<>> -> <<Field/binary, \"=\", Item/binary>>;
-                        true -> <<Acc/binary, \",\", Field/binary, \"=\", Item/binary>>
+                        Acc =:= <<>> -> Kv;
+                        true -> <<Acc/binary, \" AND \", Kv/binary>>
                     end
 
             end
@@ -359,9 +372,9 @@ select(SelectKvList, StartIndex, Len, SortKey, SortType, sql) ->
             SortKey == <<\"\">> -> <<>>;
             true ->
                 case SortType of
-                \"0\" ->
+                <<\"0\">> ->
                     <<\" order by \", SortKey/binary, \" \">>;
-                \"1\" ->
+                <<\"1\">> ->
                     <<\" order by \", SortKey/binary, \" DESC \">>
             end
         end,
@@ -369,7 +382,7 @@ select(SelectKvList, StartIndex, Len, SortKey, SortType, sql) ->
         <<>> ->
             <<\"select count(*) from ", Tab/binary, "; select ", Fields/binary, " from ", Tab/binary, " \", OrderBy/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>;
         _ ->
-            <<\"select count(*) from ", Tab/binary, "; select ", Fields/binary, " from ", Tab/binary, " where \", SelectArg/binary, \", " ", \", OrderBy/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>
+            <<\"select count(*) from ", Tab/binary, " where \", SelectArg/binary, \"; select ", Fields/binary, " from ", Tab/binary, " where \", SelectArg/binary, OrderBy/binary, \" limit \", StartIndex/binary, \", \", Len/binary, \";\">>
     end.
 
 ">>.
@@ -393,8 +406,8 @@ to_validate(FieldsRecord) ->
         fun({K, DataType, TypeSize, IsNull, Default}) ->
             KArg = list_to_binary(string:to_upper(binary_to_list(K))),
             CheckNull = if
-                            IsNull =:= <<"NO">> -> <<"(", KArg/binary, "=:= <<\"", Default/binary, "\">>)">>;
-                            true -> <<"">>
+                            IsNull =:= <<"NO">> -> <<"">>;
+                            true -> <<"(", KArg/binary, "=:= <<\"", Default/binary, "\">>)">>
                         end,
             {CheckType, Illegal} =
                 if
@@ -423,7 +436,7 @@ to_validate(FieldsRecord) ->
 to_default(Tab, ToRecord) ->
     {ToDefaultAcc, ToIndexAcc} = lists:foldl(
         fun({K, ErlType, Default, _Comment}, {ToDefault, ToIndex}) ->
-            V = case binary:match(_Comment, <<"时间戳"/utf8>>) of
+            V = case binary:match(K, <<"time"/utf8>>) of
                     nomatch ->
                         if
                             ErlType =:= int -> <<"erl_type:t2t(V, binary, integer)">>;
@@ -436,18 +449,22 @@ to_default(Tab, ToRecord) ->
                         end
                 end,
             
-            NewK = <<"<<\"", K/binary, "\">>">>,
-            
+            Index = case binary:match(K, <<"time"/utf8>>) of
+                        nomatch ->
+                            <<"to_index(<<\"", K/binary, "\">>, V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>;
+                        _ ->
+                            <<"to_index(<<\"", K/binary, "\">>, V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "};\nto_index(<<\"", K/binary, "_begin\">>, V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "};\nto_index(<<\"", K/binary, "_end\">>, V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>
+                    end,
             if
                 ToDefault =:= <<>> ->
                     {
-                        <<"to_default(", NewK/binary, ") -> <<\"", Default/binary, "\">>">>,
-                        <<"to_index(", NewK/binary, ", V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>
+                        <<"to_default(<<\"", K/binary, "\">>) -> <<\"", Default/binary, "\">>">>,
+                        Index
                     };
                 true ->
                     {
-                        <<ToDefault/binary, ";\nto_default(", NewK/binary, ") -> <<\"", Default/binary, "\">>">>,
-                        <<ToIndex/binary, ";\nto_index(", NewK/binary, ", V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>
+                        <<ToDefault/binary, ";\nto_default(<<\"", K/binary, "\">>) -> <<\"", Default/binary, "\">>">>,
+                        <<ToIndex/binary, ";\n", Index/binary>>
                     }
             end
         end, {<<>>, <<>>}, ToRecord),

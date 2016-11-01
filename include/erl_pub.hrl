@@ -30,6 +30,40 @@
     end).
 
 
+-ifdef(windows).
+
+-define(encode(Data), list_to_binary(rfc4627:encode(Data))).
+-define(decode(Data),
+    case rfc4627:decode(Data) of
+        {ok, {obj, Obj}, []} ->
+            Obj;
+        {ok, Obj, []} ->
+            Obj
+    end).
+
+
+-define(proto_decode(Data),
+    case rfc4627:decode(Data) of
+        {ok, {obj, Obj}, []} ->
+            Obj;
+        {ok, Obj, []} ->
+            Obj
+    end).
+
+
+-else.
+
+-define(encode(Data), jiffy:encode(Data)).
+-define(decode(Data),
+    case jiffy:decode(Data) of
+        {Decode} -> Decode;
+        Decode -> Decode
+    end).
+
+-define(proto_decode(Data), jiffy:decode(Data)).
+
+-endif.
+
 
 -define(mysql_account_pool, account_pool).
 -define(mysql_dynamic_pool, dynamic_pool).

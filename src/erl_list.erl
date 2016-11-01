@@ -6,7 +6,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_list).
 
--export([move/4, lists_spawn/2, diff/3, diff_kv/3]).
+-export([move/4, lists_spawn/2, diff/3, diff_kv/3, foldl/3]).
 
 %%  @doc 调换顺序
 move(0, FromItem, ToItem, List) ->
@@ -82,3 +82,13 @@ diff_kv([K | OldChannels], Channels, Acc) ->
         false ->
             diff_kv(OldChannels, Channels, [K | Acc])
     end.
+
+
+foldl(Fun, List1, List2) ->
+    foldl(Fun, List1, List2, []).
+
+foldl(_Fun, [], _List2, Acc) -> lists:reverse(Acc);
+foldl(Fun, [H1 | List1], [H2 | List2], Acc) ->
+    HAcc = Fun(H1, H2),
+    foldl(Fun, List1, List2, [HAcc | Acc]).
+    

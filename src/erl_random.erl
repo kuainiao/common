@@ -22,14 +22,14 @@ rand_s(Num, [H | R], Index) ->
 
 
 random(Max) ->
-    seed(),
-    random:uniform(Max).
+%%    seed(),
+    rand:uniform(Max).
 
 random(Min, Max) ->
-    seed(),
-    random:uniform(Max - Min + 1) + Min - 1.
+%%    seed(),
+    rand:uniform(Max - Min + 1) + Min - 1.
 
 
-seed() ->
-    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
-    random:seed({A, B, C}).
+%%seed() ->
+%%    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+%%    random:seed({A, B, C}).

@@ -18,7 +18,7 @@ get(Url, Head) ->
 
 post(Url, Head, ContentType, Body) ->
     case httpc:request(post, {Url, Head, ContentType, Body}, [{timeout, 5000}], []) of
-        {ok, {{_, 200, "OK"}, _Head, Response}} ->
+        {ok, {{_, 200, _}, _Head, Response}} ->
             {ok, Response};
         _Err ->
             _Err
