@@ -88,7 +88,7 @@ fprof(M, F, A) ->
     fprof:stop().
 
 fprof(Pid) ->
-    fprof:trace([start, {file, "./fprof.trace"}, {procs, Pid}]),  %% 或者可以trace多个Pid，[PidSpec]
+    fprof:trace([start, cpu_time, {file, "./fprof.trace"}, {procs, Pid}]),  %% 或者可以trace多个Pid，[PidSpec]
     timer:sleep(30000),
     fprof:trace([stop]),
     fprof:profile({file, "./fprof.trace"}),

@@ -5,7 +5,7 @@
 %%%-------------------------------------------------------------------
 -module(erl_time).
 
--export([now/0, m_now/0,
+-export([now/0, m_now/0, c_ms/0,
     times/0, times/1,
     zero_times/0,
     localtime_to_now/1,
@@ -22,6 +22,10 @@ now() ->
 m_now() ->
     {MegaSec, Sec, MilliSec} = os:timestamp(),
     MegaSec * 1000000000 + Sec * 1000 + round(MilliSec / 1000).
+
+c_ms() ->
+    {_MegaSec, _Sec, MilliSec} = os:timestamp(),
+    round(MilliSec / 1000).
 
 times() ->
     {MegaSec, Sec, _MilliSec} = os:timestamp(),
