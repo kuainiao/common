@@ -55,8 +55,6 @@ main() ->
     end.
 
 main(Databases) ->
-    crypto:start(),
-    emysql:start(),
     Fun =
         fun({Pool, Database}) ->
             AllTable = erl_mysql:execute(Pool, <<"select TABLE_NAME from information_schema.`TABLES` where TABLE_SCHEMA = '", (list_to_binary(Database))/binary, "';">>),

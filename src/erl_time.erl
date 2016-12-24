@@ -11,7 +11,8 @@
     localtime_to_now/1,
     sec_to_localtime/1,
     time2timer/1,
-    times_in_month/1
+    times_in_month/1,
+    index_week/0
 ]).
 
 %% @doc 获取当前服务器时间的时间戳
@@ -71,4 +72,10 @@ times_in_month(Times) ->
         Times < MTimes -> false;
         true -> true
     end.
+
+index_week() ->
+    {Y, M, D} = erlang:date(),
+    Days1 = calendar:date_to_gregorian_days(Y, M, D),
+    Days2 = calendar:date_to_gregorian_days(Y, 1, 1),
+    Y * 100 + (Days1 - Days2) div 7.
     

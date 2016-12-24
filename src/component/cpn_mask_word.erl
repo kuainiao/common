@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 -module(cpn_mask_word).
 
--export([check/1, checkRes/1, test/0, get_mask_words/0]).
+-export([check/1, checkRes/1, checkRes/2, test/0, get_mask_words/0]).
 
 
 check(Str) ->
@@ -15,11 +15,13 @@ check(Str) ->
     NewStr.
 
 
-
 %% IsBool::true=带敏感字，false=不带敏感字
 %%-spec checkRes(Str :: binary()) -> [NewStr :: binary(), IsBool:: atom()].
 checkRes(Str) ->
-    case re:run(Str, get_mask_words(), [global, notempty]) of
+    checkRes(Str, get_mask_words()).
+
+checkRes(Str, Rule) ->
+    case re:run(Str, Rule, [global, notempty]) of
         nomatch ->
             [Str, false];
         {match, MatchList} ->
@@ -39,7 +41,6 @@ checkRes(Str) ->
                 end,
             [lists:foldl(FunFoldl, Str, MatchList), true]
     end.
-
 
 
 test() ->

@@ -215,17 +215,13 @@ update(Record, sql) ->
                     case to_default(K) of
                         Default -> Acc;
                         _ ->
-                            case to_default(K) of
-                                Default -> Acc;
-                                _ ->
-                                    V = if
-                                            is_integer(Default) -> integer_to_binary(Default);
-                                            true -> <<\"'\", Default/binary, \"'\">>
-                                        end,
-                                    if
-                                        Acc =:= <<>> -> <<K/binary, \" = \", V/binary>>;
-                                        true -> <<Acc/binary, \",\", K/binary, \" = \", V/binary>>
-                                    end
+                            V = if
+                                    is_integer(Default) -> integer_to_binary(Default);
+                                    true -> <<\"'\", Default/binary, \"'\">>
+                                end,
+                            if
+                                Acc =:= <<>> -> <<K/binary, \" = \", V/binary>>;
+                                true -> <<Acc/binary, \",\", K/binary, \" = \", V/binary>>
                             end
                     end
                 end,
@@ -334,7 +330,7 @@ to_select(Tab, KvList) ->
             [[[Count]], Ret] = erl_mysql:execute(", Pool/binary, ", Sql),
             Fun =
                 fun([", NewField/binary, "]) ->
-                    {obj, [", NewEncode/binary, "]}
+                    {[", NewEncode/binary, "]}
                 end,
             {Count, lists:map(Fun, Ret)}
     end.
@@ -436,10 +432,10 @@ to_validate(FieldsRecord) ->
 to_default(Tab, ToRecord) ->
     {ToDefaultAcc, ToIndexAcc} = lists:foldl(
         fun({K, ErlType, Default, _Comment}, {ToDefault, ToIndex}) ->
-            V = case binary:match(K, <<"time"/utf8>>) of
+            V = case binary:match(K, <<"times"/utf8>>) of
                     nomatch ->
                         if
-                            ErlType =:= int -> <<"erl_type:t2t(V, binary, integer)">>;
+                            ErlType =:= int -> <<"type_can:t2t(V, binary, integer)">>;
                             true -> <<"V">>
                         end;
                     _ ->
@@ -449,7 +445,7 @@ to_default(Tab, ToRecord) ->
                         end
                 end,
             
-            Index = case binary:match(K, <<"time"/utf8>>) of
+            Index = case binary:match(K, <<"times"/utf8>>) of
                         nomatch ->
                             <<"to_index(<<\"", K/binary, "\">>, V) -> {#", Tab/binary, ".", K/binary, ", ", V/binary, "}">>;
                         _ ->
