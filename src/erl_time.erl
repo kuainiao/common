@@ -6,6 +6,7 @@
 -module(erl_time).
 
 -export([now/0, m_now/0, c_ms/0,
+    now_month/0,
     times/0, times/1,
     zero_times/0,
     localtime_to_now/1,
@@ -19,6 +20,10 @@
 now() ->
 %%    os:system_time(seconds).
     times().
+
+now_month() ->
+    {Y, M, _D} = erlang:date(),
+    <<(integer_to_binary(Y))/binary, (integer_to_binary(M))/binary>>.
 
 m_now() ->
     {MegaSec, Sec, MilliSec} = os:timestamp(),

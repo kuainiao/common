@@ -220,8 +220,8 @@ update(Record, sql) ->
                                     true -> <<\"'\", Default/binary, \"'\">>
                                 end,
                             if
-                                Acc =:= <<>> -> <<K/binary, \" = \", V/binary>>;
-                                true -> <<Acc/binary, \",\", K/binary, \" = \", V/binary>>
+                                Acc =:= <<>> -> <<\"`\", K/binary, \"` = \", V/binary>>;
+                                true -> <<Acc/binary, \",`\", K/binary, \"` = \", V/binary>>
                             end
                     end
                 end,

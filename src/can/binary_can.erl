@@ -9,9 +9,10 @@
 -include("erl_pub.hrl").
 
 -export([
-    illegal/1,      %非法字符
-    mask_word/1,     %屏蔽字符
-    is_binary/1
+    illegal/1,          %非法字符
+    mask_word/1,        %屏蔽字符
+    is_binary/1,
+    char2char/3         %特殊符号转义
 ]).
 
 illegal(Binary) ->
@@ -22,6 +23,9 @@ illegal(Binary) ->
             ?return_err(?ERR_ILLEGAL_CHATS)
     end.
 
+%% @doc 回车换行转义
+char2char(Binary, Char1, Char2) ->
+    binary:replace(Binary, Char1, Char2, [global]).
 
 mask_word(Binary) ->
     case cpn_mask_word:checkRes(Binary) of
