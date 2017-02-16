@@ -6,46 +6,14 @@
 %%%-------------------------------------------------------------------
 -module(erl_list).
 
--export([move/4, lists_spawn/2, diff/3, diff_kv/3, foldl/3]).
+-export([
+    lists_spawn/2,
+    diff/3,
+    diff_kv/3,
+    foldl/3,
+    map_break/2
+]).
 
-%%  @doc 调换顺序
-move(0, FromItem, ToItem, List) ->
-    FromIndex = index(FromItem, List, 1),
-    ToIndex = index(ToItem, List, 1),
-    if
-        FromIndex =< ToIndex ->
-            FirstChunk = lists:sublist(List, 0, FromIndex - 1),
-            SecondChunk = lists:sublist(List, FromIndex, ToIndex - 1),
-            LastChunk = lists:sublist(List, ToIndex, length(List)),
-            lists:merge3(FirstChunk, [FromItem | SecondChunk], [ToItem | LastChunk]);
-        true ->
-            FirstChunk = lists:sublist(List, 0, ToIndex - 1),
-            SecondChunk = lists:sublist(List, ToIndex, FromIndex - 1),
-            LastChunk = lists:sublist(List, FromIndex, length(List)),
-            lists:merge3(FirstChunk, [ToItem | SecondChunk], [FromItem | LastChunk])
-    end;
-
-%% @doc From移动到to，从to开始往后移动一位
-move(1, FromItem, ToItem, List) ->
-    FromIndex = index(FromItem, List, 1),
-    ToIndex = index(ToItem, List, 1),
-    if
-        FromIndex =< ToIndex ->
-            FirstChunk = lists:sublist(List, 0, FromIndex - 1),
-            SecondChunk = lists:sublist(List, FromIndex, ToIndex - 1),
-            LastChunk = lists:sublist(List, ToIndex, length(List)),
-            lists:merge3(FirstChunk, SecondChunk, [ToItem, FromItem | LastChunk]);
-        true ->
-            FirstChunk = lists:sublist(List, 0, ToIndex - 1),
-            SecondChunk = lists:sublist(List, ToIndex, FromIndex - 1),
-            LastChunk = lists:sublist(List, FromIndex, length(List)),
-            lists:merge3(FirstChunk, [FromItem, ToItem | SecondChunk], LastChunk)
-    end.
-
-
-index(_Item, [], _Num) -> 0;
-index(Item, [Item | _List], Num) -> Num;
-index(Item, [_I | List], Num) -> index(Item, List, Num + 1).
 
 lists_spawn(Fun, Lists) ->
     Ref = erlang:make_ref(),
@@ -91,4 +59,11 @@ foldl(_Fun, [], _List2, Acc) -> lists:reverse(Acc);
 foldl(Fun, [H1 | List1], [H2 | List2], Acc) ->
     HAcc = Fun(H1, H2),
     foldl(Fun, List1, List2, [HAcc | Acc]).
-    
+
+
+map_break(_Fun, []) -> false;
+map_break(Fun, [H | R]) ->
+    case Fun(H) of
+        false -> map_break(Fun, R);
+        Ret -> Ret
+    end.

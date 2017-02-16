@@ -6,10 +6,13 @@
 %%%-------------------------------------------------------------------
 -module(erl_mysql).
 
--include("erl_pub.hrl").
+-include("../../global/include/global_pub.hrl").
 
--export([start/0, illegal_character/1, execute/1, execute/2, ea/1, ed/1, es/1, el/1, eg/1]).
+-export([start/0, illegal_character/1, execute/1, execute/2]).
 
+-export([ea/1, ed/1, es/1, el/1, eg/1]).
+-export([call_ea/2, call_ed/3, call_es/2, call_el/3, call_eg/2]).
+-export([cast_ea/2, cast_ed/3, cast_es/2, cast_el/3, cast_eg/2]).
 
 start() ->
     emysql:start().
@@ -27,13 +30,55 @@ illegal_character(K, [Char | Chars]) ->
 
 
 execute(SQL) ->
-    execute(?mysql_gm_tool, SQL).
+    execute(?pool_gm, SQL).
 
-ea(SQL) -> execute(?mysql_account_pool, SQL).
-ed(SQL) -> execute(?mysql_dynamic_pool, SQL).
-es(SQL) -> execute(?mysql_static_pool, SQL).
-el(SQL) -> execute(?mysql_log_pool, SQL).
-eg(SQL) -> execute(?mysql_gm_tool, SQL).
+ea(SQL) -> execute(?pool_account, SQL).
+ed(SQL) -> execute(?pool_dynamic, SQL).
+es(SQL) -> execute(?pool_static, SQL).
+el(SQL) -> execute(?pool_log, SQL).
+eg(SQL) -> execute(?pool_gm, SQL).
+
+call_ea(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:call(Node, ?rpc_func, ea, [Sql]).
+
+call_ed(App, Uin, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:call(Node, ?rpc_func, ed, [Uin, Sql]).
+
+call_es(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:call(Node, ?rpc_func, es, [Sql]).
+
+call_el(App, Uin, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:call(Node, ?rpc_func, el, [Uin, Sql]).
+
+call_eg(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:call(Node, ?rpc_func, eg, [Sql]).
+
+
+cast_ea(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:cast(Node, ?rpc_func, ea, [Sql]).
+
+cast_ed(App, Uin, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:cast(Node, ?rpc_func, ed, [Uin, Sql]).
+
+cast_es(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:cast(Node, ?rpc_func, es, [Sql]).
+
+cast_el(App, Uin, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:cast(Node, ?rpc_func, el, [Uin, Sql]).
+
+cast_eg(App, Sql) ->
+    {ok, Node} = application:get_env(App, ?db_node),
+    rpc:cast(Node, ?rpc_func, eg, [Sql]).
+
 
 execute(Pool, SQL) ->
     case iolist_to_binary(SQL) of
@@ -50,7 +95,7 @@ execute(Pool, 6, Sql) ->
 
 
 execute(Pool, Num, Sql) ->
-    try emysql:execute(Pool, Sql, 10000) of
+    try emysql:execute(Pool, Sql, 30000) of
         {result_packet, _SeqNum, _FieldList, Rows, _Extra} ->
             Rows;
         {ok_packet, _SeqNum, _AffectedRows, InsertId, _Status, _WarningCount, _Msg} ->

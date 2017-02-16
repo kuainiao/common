@@ -43,6 +43,7 @@
 
 -ifdef(linux).
 
+-define(LAGER_START, ok).
 -define(INFO(MSG),          io:format(?color_green"~p [INFO] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
 -define(INFO(FMT, ARGS),    io:format(?color_green"~p [INFO] [~s:~b] "  FMT"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(WARN(MSG),          io:format(?color_yellow"~p [WARN] [~s:~b] "  MSG"~n"?color_none, [calendar:local_time(), ?FILE, ?LINE])).
@@ -60,7 +61,7 @@
 -else.
 
 %%-ifdef(windows).
-
+-define(LAGER_START, ok).
 -define(INFO(MSG),          io:format("~p [INFO] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
 -define(INFO(FMT, ARGS),    io:format("~p [INFO] [~s:~b] "  FMT"~n", [calendar:local_time(), ?FILE, ?LINE | ARGS])).
 -define(WARN(MSG),          io:format("~p [WARN] [~s:~b] "  MSG"~n", [calendar:local_time(), ?FILE, ?LINE])).
@@ -77,6 +78,7 @@
 -endif.
 -else.
 
+-define(LAGER_START, lager:start()).
 -define(INFO(MSG),          ok).
 -define(INFO(FMT, ARGS),    ok).
 -define(WARN(MSG),          lager:warning(MSG)).
